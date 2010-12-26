@@ -32,37 +32,36 @@ extern zend_module_entry opencv_module_entry;
 #	define PHP_OPENCV_API
 #endif
 
+/* Macros for PHP 5.2 */
+#ifndef zend_parse_parameters_none
+#define zend_parse_parameters_none()                                        \
+    zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "")
+#endif
+
+/* refcount macros */
+#ifndef Z_ADDREF_P
+#define Z_ADDREF_P(pz)                (pz)->refcount++
+#endif
+
+#ifndef Z_DELREF_P
+#define Z_DELREF_P(pz)                (pz)->refcount--
+#endif
+
+#ifndef Z_SET_REFCOUNT_P
+#define Z_SET_REFCOUNT_P(pz, rc)      (pz)->refcount = rc
+#endif
+
 #ifdef ZTS
 #include "TSRM.h"
 #endif
+
+#include <cv.h>
 
 PHP_MINIT_FUNCTION(opencv);
 PHP_MSHUTDOWN_FUNCTION(opencv);
 PHP_RINIT_FUNCTION(opencv);
 PHP_RSHUTDOWN_FUNCTION(opencv);
 PHP_MINFO_FUNCTION(opencv);
-
-PHP_FUNCTION(confirm_opencv_compiled);	/* For testing, remove later. */
-
-/* 
-  	Declare any global variables you may need between the BEGIN
-	and END macros here:     
-
-ZEND_BEGIN_MODULE_GLOBALS(opencv)
-	long  global_value;
-	char *global_string;
-ZEND_END_MODULE_GLOBALS(opencv)
-*/
-
-/* In every utility function you add that needs to use variables 
-   in php_opencv_globals, call TSRMLS_FETCH(); after declaring other 
-   variables used by that function, or better yet, pass in TSRMLS_CC
-   after the last function argument and declare your utility function
-   with TSRMLS_DC after the last declared argument.  Always refer to
-   the globals in your function as OPENCV_G(variable).  You are 
-   encouraged to rename these macros something shorter, see
-   examples in any other php module directory.
-*/
 
 #ifdef ZTS
 #define OPENCV_G(v) TSRMG(opencv_globals_id, zend_opencv_globals *, v)
