@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author:                                                              |
+  | Author: Michael Maclean <mgdm@php.net>                               |
   +----------------------------------------------------------------------+
 */
 
@@ -58,10 +58,17 @@ extern zend_module_entry opencv_module_entry;
 #include <cv.h>
 
 PHP_MINIT_FUNCTION(opencv);
+PHP_MINIT_FUNCTION(opencv_error);
+PHP_MINIT_FUNCTION(opencv_arr);
 PHP_MSHUTDOWN_FUNCTION(opencv);
-PHP_RINIT_FUNCTION(opencv);
-PHP_RSHUTDOWN_FUNCTION(opencv);
 PHP_MINFO_FUNCTION(opencv);
+
+extern zend_object_handlers opencv_std_object_handlers;
+extern zend_class_entry *opencv_ce_cvexception;
+extern zend_class_entry *opencv_ce_cvarr;
+
+PHP_OPENCV_API extern void php_opencv_throw_exception();
+
 
 #ifdef ZTS
 #define OPENCV_G(v) TSRMG(opencv_globals_id, zend_opencv_globals *, v)

@@ -20,10 +20,11 @@ if test "$PHP_OPENCV" != "no"; then
 
   export CPPFLAGS="$OLD_CPPFLAGS"
 
+  PHP_REQUIRE_CXX()
   PHP_SUBST(OPENCV_SHARED_LIBADD)
   AC_DEFINE(HAVE_OPENCV, 1, [ ])
 
-  PHP_NEW_EXTENSION(opencv, opencv.c, $ext_shared)
+  PHP_NEW_EXTENSION(opencv, opencv.c opencv_error.c opencv_arr.c, $ext_shared)
 
   EXT_OPENCV_HEADERS="php_opencv_api.h"
 

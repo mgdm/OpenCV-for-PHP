@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author:                                                              |
+  | Author: Michael Maclean <mgdm@php.net>                               |
   +----------------------------------------------------------------------+
 */
 
@@ -53,8 +53,8 @@ zend_module_entry opencv_module_entry = {
 	opencv_functions,
 	PHP_MINIT(opencv),
 	PHP_MSHUTDOWN(opencv),
-	PHP_RINIT(opencv),		/* Replace with NULL if there's nothing to do at request start */
-	PHP_RSHUTDOWN(opencv),	/* Replace with NULL if there's nothing to do at request end */
+	NULL,
+	NULL,
 	PHP_MINFO(opencv),
 #if ZEND_MODULE_API_NO >= 20010901
 	"0.1", /* Replace with version number for your extension */
@@ -95,6 +95,8 @@ PHP_MINIT_FUNCTION(opencv)
 	/* If you have INI entries, uncomment these lines 
 	REGISTER_INI_ENTRIES();
 	*/
+	PHP_MINIT(opencv_error)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(opencv_arr)(INIT_FUNC_ARGS_PASSTHRU);
 	return SUCCESS;
 }
 /* }}} */
@@ -110,30 +112,13 @@ PHP_MSHUTDOWN_FUNCTION(opencv)
 }
 /* }}} */
 
-/* Remove if there's nothing to do at request start */
-/* {{{ PHP_RINIT_FUNCTION
- */
-PHP_RINIT_FUNCTION(opencv)
-{
-	return SUCCESS;
-}
-/* }}} */
-
-/* Remove if there's nothing to do at request end */
-/* {{{ PHP_RSHUTDOWN_FUNCTION
- */
-PHP_RSHUTDOWN_FUNCTION(opencv)
-{
-	return SUCCESS;
-}
-/* }}} */
-
 /* {{{ PHP_MINFO_FUNCTION
  */
 PHP_MINFO_FUNCTION(opencv)
 {
 	php_info_print_table_start();
-	php_info_print_table_header(2, "opencv support", "enabled");
+	php_info_print_table_header(2, "OpenCV support", "Enabled");
+	php_info_print_table_row(2, "OpenCV library version", CV_VERSION);
 	php_info_print_table_end();
 
 	/* Remove comments if you have entries in php.ini
