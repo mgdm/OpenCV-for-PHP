@@ -32,6 +32,14 @@ extern zend_module_entry opencv_module_entry;
 #	define PHP_OPENCV_API
 #endif
 
+#ifndef FALSE
+#define FALSE (0)
+#endif
+
+#ifndef TRUE
+#define TRUE (!FALSE)
+#endif
+
 /* Macros for PHP 5.2 */
 #ifndef zend_parse_parameters_none
 #define zend_parse_parameters_none()                                        \
@@ -51,6 +59,35 @@ extern zend_module_entry opencv_module_entry;
 #define Z_SET_REFCOUNT_P(pz, rc)      (pz)->refcount = rc
 #endif
 
+/* turn error handling to exception mode and restore */
+#if PHP_VERSION_ID >= 50300
+/* 5.3 version of the macros */
+#define PHP_OPENCV_ERROR_HANDLING(force_exceptions) \
+	zend_error_handling error_handling; \
+	if(force_exceptions || getThis()) { \
+		zend_replace_error_handling(EH_THROW, opencv_ce_cvexception, &error_handling TSRMLS_CC); \
+	}
+
+#define PHP_OPENCV_RESTORE_ERRORS(force_exceptions) \
+	if(force_exceptions || getThis()) { \
+		zend_restore_error_handling(&error_handling TSRMLS_CC); \
+	}
+
+#else
+/* 5.2 versions of the macros */
+#define PHP_OPENCV_ERROR_HANDLING(force_exceptions) \
+	if(force_exceptions || getThis()) { \
+		php_set_error_handling(EH_THROW, opencv_ce_cvexception TSRMLS_CC); \
+	}
+
+#define PHP_OPENCV_RESTORE_ERRORS(force_exceptions) \
+	if(force_exceptions || getThis()) { \
+		php_std_error_handling(); \
+	}
+
+#endif
+
+
 #ifdef ZTS
 #include "TSRM.h"
 #endif
@@ -59,16 +96,25 @@ extern zend_module_entry opencv_module_entry;
 
 PHP_MINIT_FUNCTION(opencv);
 PHP_MINIT_FUNCTION(opencv_error);
+PHP_MINIT_FUNCTION(opencv_mat);
 PHP_MINIT_FUNCTION(opencv_arr);
+PHP_MINIT_FUNCTION(opencv_iplimage);
 PHP_MSHUTDOWN_FUNCTION(opencv);
 PHP_MINFO_FUNCTION(opencv);
 
 extern zend_object_handlers opencv_std_object_handlers;
 extern zend_class_entry *opencv_ce_cvexception;
+extern zend_class_entry *opencv_ce_cvmat;
 extern zend_class_entry *opencv_ce_cvarr;
+extern zend_class_entry *opencv_ce_iplimage;
 
 PHP_OPENCV_API extern void php_opencv_throw_exception();
 
+typedef struct _opencv_iplimage_object {
+	zend_object std;
+	zend_bool constructed;
+	IplImage *image;
+} opencv_iplimage_object;
 
 #ifdef ZTS
 #define OPENCV_G(v) TSRMG(opencv_globals_id, zend_opencv_globals *, v)

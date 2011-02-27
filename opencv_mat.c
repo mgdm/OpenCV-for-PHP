@@ -23,42 +23,36 @@
 #endif
 
 #include "php.h"
-#include "zend_exceptions.h"
 #include "php_opencv.h"
+#include "zend_exceptions.h"
 
-zend_class_entry *opencv_ce_cvexception;
+zend_class_entry *opencv_ce_cvmat;
+
+/* {{{ proto void contruct()
+   OpenCV_Mat CANNOT be extended in userspace, this will throw an exception on use */
+PHP_METHOD(OpenCV_Mat, __construct)
+{
+	zend_throw_exception(opencv_ce_cvexception, "OpenCV\\Mat cannot be constructed", 0 TSRMLS_CC);
+}
+/* }}} */
+
+/* {{{ opencv_mat_methods[] */
+const zend_function_entry opencv_mat_methods[] = { 
+    PHP_ME(OpenCV_Mat, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+    {NULL, NULL, NULL}
+};
+/* }}} */
 
 /* {{{ PHP_MINIT_FUNCTION */
-PHP_MINIT_FUNCTION(opencv_error)
+PHP_MINIT_FUNCTION(opencv_mat)
 {
-	zend_class_entry ce, status_ce;
+	zend_class_entry ce;
 
-	INIT_NS_CLASS_ENTRY(ce, "OpenCV", "Exception", NULL);
-	opencv_ce_cvexception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), "Exception" TSRMLS_CC);
+	INIT_NS_CLASS_ENTRY(ce, "OpenCV", "Mat", opencv_mat_methods);
+	opencv_ce_cvmat = zend_register_internal_class(&ce TSRMLS_CC);
 
 	return SUCCESS;
 }
 /* }}} */
 
-PHP_OPENCV_API void php_opencv_throw_exception(TSRMLS_D)
-{
-	char * error_message;
-	int status = cvGetErrStatus();
 
-	if (status >= 0) {
-		return;
-	}
-	error_message = estrdup(cvErrStr(status));
-	zend_throw_exception(opencv_ce_cvexception, error_message, status TSRMLS_CC);
-	efree(error_message);
-	return;
-}
-
-/*
- * Local variables:
- * tab-width: 4
- * c-basic-offset: 4
- * End:
- * vim600: noet sw=4 ts=4 fdm=marker
- * vim<600: noet sw=4 ts=4
- */

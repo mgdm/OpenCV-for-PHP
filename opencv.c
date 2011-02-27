@@ -34,6 +34,15 @@ ZEND_DECLARE_MODULE_GLOBALS(opencv)
 /* True global resources - no need for thread safety here */
 static int le_opencv;
 
+zend_class_entry *opencv_ce_cv;
+/* {{{ proto void contruct()
+   OpenCV CANNOT be extended in userspace, this will throw an exception on use */
+PHP_METHOD(OpenCV, __construct)
+{
+	zend_throw_exception(opencv_ce_cvexception, "OpenCV cannot be constructed", 0 TSRMLS_CC);
+}
+/* }}} */
+
 /* {{{ opencv_functions[]
  *
  * Every user visible function must have an entry in opencv_functions[].
@@ -67,27 +76,6 @@ zend_module_entry opencv_module_entry = {
 ZEND_GET_MODULE(opencv)
 #endif
 
-/* {{{ PHP_INI
- */
-/* Remove comments and fill if you need to have entries in php.ini
-PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("opencv.global_value",      "42", PHP_INI_ALL, OnUpdateLong, global_value, zend_opencv_globals, opencv_globals)
-    STD_PHP_INI_ENTRY("opencv.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_opencv_globals, opencv_globals)
-PHP_INI_END()
-*/
-/* }}} */
-
-/* {{{ php_opencv_init_globals
- */
-/* Uncomment this function if you have INI entries
-static void php_opencv_init_globals(zend_opencv_globals *opencv_globals)
-{
-	opencv_globals->global_value = 0;
-	opencv_globals->global_string = NULL;
-}
-*/
-/* }}} */
-
 /* {{{ PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(opencv)
@@ -95,8 +83,12 @@ PHP_MINIT_FUNCTION(opencv)
 	/* If you have INI entries, uncomment these lines 
 	REGISTER_INI_ENTRIES();
 	*/
+
+	cvSetErrMode(CV_ErrModeSilent);
 	PHP_MINIT(opencv_error)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_arr)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(opencv_mat)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(opencv_iplimage)(INIT_FUNC_ARGS_PASSTHRU);
 	return SUCCESS;
 }
 /* }}} */
