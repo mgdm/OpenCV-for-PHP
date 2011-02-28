@@ -80,12 +80,12 @@ PHP_METHOD(OpenCV_IplImage, __construct)
 	long format, width, height;
 	opencv_iplimage_object *iplimage_object;
 
-	PHP_OPENCV_ERROR_HANDLING(TRUE)
+	PHP_OPENCV_ERROR_HANDLING()
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lll", &format, &width, &height) == FAILURE) {
-		PHP_OPENCV_RESTORE_ERRORS(TRUE)
+		PHP_OPENCV_RESTORE_ERRORS()
 		return;
 	}
-	PHP_OPENCV_RESTORE_ERRORS(TRUE)
+	PHP_OPENCV_RESTORE_ERRORS()
 
 	iplimage_object = (opencv_iplimage_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 	iplimage_object->image = cairo_image_surface_create(format, width, height);
@@ -99,12 +99,12 @@ PHP_METHOD(OpenCV_IplImage, load) {
     char *filename;
     int filename_len;
 
-    PHP_OPENCV_ERROR_HANDLING(TRUE)
+    PHP_OPENCV_ERROR_HANDLING();
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &filename, &filename_len) == FAILURE) {
-        PHP_OPENCV_RESTORE_ERRORS(TRUE)
+        PHP_OPENCV_RESTORE_ERRORS();
         return;
     }
-    PHP_OPENCV_RESTORE_ERRORS(TRUE)
+    PHP_OPENCV_RESTORE_ERRORS();
 
     object_init_ex(return_value, opencv_ce_iplimage);
     iplimage_object = zend_object_store_get_object(return_value TSRMLS_CC);
@@ -118,12 +118,12 @@ PHP_METHOD(OpenCV_IplImage, save) {
     char *filename;
     int filename_len, status;
 
-    PHP_OPENCV_ERROR_HANDLING(TRUE)
+    PHP_OPENCV_ERROR_HANDLING();
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os", &image_zval, opencv_ce_iplimage, &filename, &filename_len) == FAILURE) {
-        PHP_OPENCV_RESTORE_ERRORS(TRUE)
+        PHP_OPENCV_RESTORE_ERRORS();
         return;
     }
-    PHP_OPENCV_RESTORE_ERRORS(TRUE)
+    PHP_OPENCV_RESTORE_ERRORS();
 
     iplimage_object = opencv_iplimage_object_get(getThis() TSRMLS_CC);
     status = cvSaveImage(filename, iplimage_object->image);
@@ -133,11 +133,44 @@ PHP_METHOD(OpenCV_IplImage, save) {
     }
 }
 
+/* {{{ */
+PHP_METHOD(OpenCV_IplImage, setImageROI) {
+    opencv_iplimage_object *iplimage_object;
+    zval *image_zval, *rect_zval, **ppzval;
+    HashTable *rect_ht;
+    long[4] rect_vals;
+    int i = 0;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oh", &image_zval, opencv_ce_iplimage, &rect_ht) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    for (zend_hash_internal_pointer_reset(rect_ht); zend_hash_has_more_elements(rect_ht); zend_hash_move_forward(rect_ht)) {
+        if (zend_hash_get_current_data(rect_ht, (void **) ppzval) == FAILURE) {
+            continue;
+        }
+
+        if (Z_TYPE_PP(ppzval) != IS_DOUBLE) {
+            convert_to_double(*ppzval);
+        }
+        rect_vals[i++] = Z_DVAL_PP(ppzval);
+    }
+
+    iplimage_object = opencv_iplimage_object_get(getThis() TSRMLS_CC);
+    cvSetImageROI(iplimage_object->image, cvRect(rect_vals[0], rect_vals[1], rect_vals[2], rect_vals[3]));
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
 /* {{{ opencv_iplimage_methods[] */
 const zend_function_entry opencv_iplimage_methods[] = { 
     //PHP_ME(OpenCV_IplImage, __construct, NULL, ZEND_ACC_CTOR|ZEND_ACC_STATIC)
     PHP_ME(OpenCV_IplImage, load, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
     PHP_ME(OpenCV_IplImage, save, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_IplImage, setImageROI, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 /* }}} */

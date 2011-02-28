@@ -62,28 +62,19 @@ extern zend_module_entry opencv_module_entry;
 /* turn error handling to exception mode and restore */
 #if PHP_VERSION_ID >= 50300
 /* 5.3 version of the macros */
-#define PHP_OPENCV_ERROR_HANDLING(force_exceptions) \
-	zend_error_handling error_handling; \
-	if(force_exceptions || getThis()) { \
-		zend_replace_error_handling(EH_THROW, opencv_ce_cvexception, &error_handling TSRMLS_CC); \
-	}
+#define PHP_OPENCV_ERROR_HANDLING() \
+	zend_replace_error_handling(EH_THROW, opencv_ce_cvexception, &opencv_original_error_handling TSRMLS_CC)
 
-#define PHP_OPENCV_RESTORE_ERRORS(force_exceptions) \
-	if(force_exceptions || getThis()) { \
-		zend_restore_error_handling(&error_handling TSRMLS_CC); \
-	}
+#define PHP_OPENCV_RESTORE_ERRORS() \
+	zend_restore_error_handling(&opencv_original_error_handling TSRMLS_CC)
 
 #else
 /* 5.2 versions of the macros */
-#define PHP_OPENCV_ERROR_HANDLING(force_exceptions) \
-	if(force_exceptions || getThis()) { \
-		php_set_error_handling(EH_THROW, opencv_ce_cvexception TSRMLS_CC); \
-	}
+#define PHP_OPENCV_ERROR_HANDLING() \
+		php_set_error_handling(EH_THROW, opencv_ce_cvexception TSRMLS_CC)
 
-#define PHP_OPENCV_RESTORE_ERRORS(force_exceptions) \
-	if(force_exceptions || getThis()) { \
-		php_std_error_handling(); \
-	}
+#define PHP_OPENCV_RESTORE_ERRORS() \
+		php_std_error_handling()
 
 #endif
 
@@ -107,6 +98,8 @@ extern zend_class_entry *opencv_ce_cvexception;
 extern zend_class_entry *opencv_ce_cvmat;
 extern zend_class_entry *opencv_ce_cvarr;
 extern zend_class_entry *opencv_ce_iplimage;
+
+zend_error_handling opencv_original_error_handling;
 
 PHP_OPENCV_API extern void php_opencv_throw_exception();
 
