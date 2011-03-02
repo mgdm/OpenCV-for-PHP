@@ -86,8 +86,8 @@ PHP_MINIT_FUNCTION(opencv)
 
 	cvSetErrMode(CV_ErrModeSilent);
 	PHP_MINIT(opencv_error)(INIT_FUNC_ARGS_PASSTHRU);
-	PHP_MINIT(opencv_mat)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_arr)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(opencv_mat)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_iplimage)(INIT_FUNC_ARGS_PASSTHRU);
 	return SUCCESS;
 }

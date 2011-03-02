@@ -103,10 +103,22 @@ zend_error_handling opencv_original_error_handling;
 
 PHP_OPENCV_API extern void php_opencv_throw_exception();
 
+typedef struct _opencv_arr_object {
+	zend_object std;
+	zend_bool constructed;
+	CvArr *cvptr;
+} opencv_arr_object;
+
+typedef struct _opencv_mat_object {
+	zend_object std;
+	zend_bool constructed;
+	CvMat *cvptr;
+} opencv_mat_object;
+
 typedef struct _opencv_iplimage_object {
 	zend_object std;
 	zend_bool constructed;
-	IplImage *image;
+	IplImage *cvptr;
 } opencv_iplimage_object;
 
 #ifdef ZTS
