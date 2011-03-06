@@ -37,31 +37,34 @@ static inline opencv_image_object* opencv_image_object_get(zval *zobj TSRMLS_DC)
     return pobj;
 }
 
-#define PHP_OPENCV_ADD_IMAGE_PROPERTY(PROPERTY, MEMBER) \
+#define PHP_OPENCV_ADD_IMAGE_LONG_PROPERTY(PROPERTY, MEMBER) \
     do { \
         zval *temp_prop; \
         MAKE_STD_ZVAL(temp_prop); \
         ZVAL_LONG(temp_prop, MEMBER); \
-        zend_hash_update(Z_OBJPROP_P(return_value), PROPERTY, sizeof(PROPERTY), (void **) &temp_prop, sizeof(zval *), NULL); \
+        zend_hash_update(Z_OBJPROP_P(image_zval), PROPERTY, sizeof(PROPERTY), (void **) &temp_prop, sizeof(zval *), NULL); \
     } while(0);
 
 
-PHP_OPENCV_API zval *php_opencv_make_image_zval(IplImage *image TSRMLS_DC) {
+PHP_OPENCV_API zval *php_opencv_make_image_zval(IplImage *image, zval *image_zval TSRMLS_DC) {
     zval *return_value, *width, *height;
     opencv_image_object *image_obj;
 
-    MAKE_STD_ZVAL(return_value);
-    object_init_ex(return_value, opencv_ce_image);
-    image_obj = (opencv_image_object *) zend_object_store_get_object(return_value TSRMLS_CC);
+    if (image_zval == NULL) {
+        MAKE_STD_ZVAL(image_zval);
+    }
+
+    object_init_ex(image_zval, opencv_ce_image);
+    image_obj = (opencv_image_object *) zend_object_store_get_object(image_zval TSRMLS_CC);
     image_obj->cvptr = image;
 
-    PHP_OPENCV_ADD_IMAGE_PROPERTY("width", image->width);
-    PHP_OPENCV_ADD_IMAGE_PROPERTY("height", image->height);
-    PHP_OPENCV_ADD_IMAGE_PROPERTY("nChannels", image->nChannels);
-    PHP_OPENCV_ADD_IMAGE_PROPERTY("alphaChannel", image->alphaChannel);
-    PHP_OPENCV_ADD_IMAGE_PROPERTY("depth", image->depth);
+    PHP_OPENCV_ADD_IMAGE_LONG_PROPERTY("width", image->width);
+    PHP_OPENCV_ADD_IMAGE_LONG_PROPERTY("height", image->height);
+    PHP_OPENCV_ADD_IMAGE_LONG_PROPERTY("nChannels", image->nChannels);
+    PHP_OPENCV_ADD_IMAGE_LONG_PROPERTY("alphaChannel", image->alphaChannel);
+    PHP_OPENCV_ADD_IMAGE_LONG_PROPERTY("depth", image->depth);
 
-    return return_value;
+    return image_zval;
 }
 
 void opencv_image_object_destroy(void *object TSRMLS_DC)
@@ -100,7 +103,7 @@ static zend_object_value opencv_image_object_new(zend_class_entry *ce TSRMLS_DC)
     return retval;
 }
 
-/* {{{ proto void __construct(int format, int width, int height)
+/* {{{ proto void __construct(int width, int height, int format, int channels)
        Returns new CairoSurfaceImage object created on an image surface */
 PHP_METHOD(OpenCV_Image, __construct)
 {
@@ -116,10 +119,8 @@ PHP_METHOD(OpenCV_Image, __construct)
 	}
 	PHP_OPENCV_RESTORE_ERRORS();
 
-    zval_dtor(return_value);
     temp = cvCreateImage(cvSize(width, height), format, channels);
-    *return_value = *php_opencv_make_image_zval(temp);
-	image_object = (opencv_image_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    php_opencv_make_image_zval(temp, getThis() TSRMLS_CC);
 	php_opencv_throw_exception(TSRMLS_C);
 }
 /* }}} */
@@ -137,9 +138,8 @@ PHP_METHOD(OpenCV_Image, load) {
     }
     PHP_OPENCV_RESTORE_ERRORS();
 
-    zval_dtor(return_value);
     temp = (IplImage *) cvLoadImage(filename, mode);
-    *return_value = *php_opencv_make_image_zval(temp);
+    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
     php_opencv_throw_exception(TSRMLS_C);
 }
 
@@ -189,7 +189,30 @@ PHP_METHOD(OpenCV_Image, setImageROI) {
 }
 /* }}} */
 
+/* {{{ */
+PHP_METHOD(OpenCV_Image, getImageROI) {
+    opencv_image_object *image_object;
+    zval *image_zval;
+    CvRect rect;
 
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O", &image_zval, opencv_ce_image) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(getThis() TSRMLS_CC);
+    rect = cvGetImageROI(image_object->cvptr);
+    array_init(return_value);
+    add_assoc_long(return_value, "x", rect.x);
+    add_assoc_long(return_value, "y", rect.y);
+    add_assoc_long(return_value, "width", rect.width);
+    add_assoc_long(return_value, "height", rect.height);
+
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
 
 /* {{{ */
 PHP_METHOD(OpenCV_Image, resetImageROI) {
@@ -226,9 +249,8 @@ PHP_METHOD(OpenCV_Image, smooth) {
 
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
 
-    zval_dtor (return_value);
     temp = cvCloneImage(image_object->cvptr);
-    *return_value = *php_opencv_make_image_zval(temp TSRMLS_CC);
+    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
     dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
 
     cvSmooth(image_object->cvptr, dst_object->cvptr, smoothType, params[0], params[1], params[2], params[3]);
@@ -236,14 +258,349 @@ PHP_METHOD(OpenCV_Image, smooth) {
 }
 /* }}} */
 
+/* {{{ */
+PHP_METHOD(OpenCV_Image, laplace) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp;
+    long apertureSize = 0;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol", &image_zval, opencv_ce_image, &apertureSize) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    temp = cvCreateImage(cvGetSize(image_object->cvptr), IPL_DEPTH_16S, image_object->cvptr->nChannels);
+    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+
+    cvLaplace(image_object->cvptr, dst_object->cvptr, apertureSize);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, sobel) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp;
+    long xorder = 0, yorder = 0, apertureSize = 0;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Olll", &image_zval, opencv_ce_image, &xorder, &yorder, &apertureSize) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    temp = cvCreateImage(cvGetSize(image_object->cvptr), IPL_DEPTH_16S, image_object->cvptr->nChannels);
+    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+
+    cvSobel(image_object->cvptr, dst_object->cvptr, xorder, yorder, apertureSize);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, erode) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp;
+    long iterations = 1;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol", &image_zval, opencv_ce_image, &iterations) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    temp = cvCloneImage(image_object->cvptr);
+    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+
+    cvErode(image_object->cvptr, dst_object->cvptr, NULL, iterations);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, dilate) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp;
+    long iterations = 1;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol", &image_zval, opencv_ce_image, &iterations) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    temp = cvCloneImage(image_object->cvptr);
+    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+
+    cvDilate(image_object->cvptr, dst_object->cvptr, NULL, iterations);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, open) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp;
+    long iterations = 1;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol", &image_zval, opencv_ce_image, &iterations) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    temp = cvCloneImage(image_object->cvptr);
+    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+
+    cvMorphologyEx(image_object->cvptr, dst_object->cvptr, NULL, NULL, CV_MOP_OPEN, iterations);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, close) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp;
+    long iterations = 1;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol", &image_zval, opencv_ce_image, &iterations) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    temp = cvCloneImage(image_object->cvptr);
+    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+
+    cvMorphologyEx(image_object->cvptr, dst_object->cvptr, NULL, NULL, CV_MOP_CLOSE, iterations);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, gradient) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp, *temp2;
+    long iterations = 1;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol", &image_zval, opencv_ce_image, &iterations) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    temp = cvCloneImage(image_object->cvptr);
+    temp2 = cvCloneImage(image_object->cvptr);
+    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+
+    cvMorphologyEx(image_object->cvptr, dst_object->cvptr, temp2, NULL, CV_MOP_GRADIENT, iterations);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, topHat) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp;
+    long iterations = 1;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol", &image_zval, opencv_ce_image, &iterations) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    temp = cvCloneImage(image_object->cvptr);
+    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+
+    cvMorphologyEx(image_object->cvptr, dst_object->cvptr, NULL, NULL, CV_MOP_TOPHAT, iterations);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, blackHat) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp;
+    long iterations = 1;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol", &image_zval, opencv_ce_image, &iterations) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    temp = cvCloneImage(image_object->cvptr);
+    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+
+    cvMorphologyEx(image_object->cvptr, dst_object->cvptr, NULL, NULL, CV_MOP_BLACKHAT, iterations);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, resize) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval, *dst_zval;
+    long interpolation = CV_INTER_LINEAR;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "OO|l", &image_zval, opencv_ce_image, &dst_zval, opencv_ce_image, &interpolation) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    dst_object = opencv_image_object_get(dst_zval TSRMLS_CC);
+
+    cvResize(image_object->cvptr, dst_object->cvptr, interpolation);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, pyrDown) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp;
+    long filter = CV_GAUSSIAN_5x5;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol", &image_zval, opencv_ce_image, &filter) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    temp = cvCreateImage(
+            cvSize(image_object->cvptr->width / 2, image_object->cvptr->height / 2),
+            image_object->cvptr->depth, image_object->cvptr->nChannels);
+    php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = opencv_image_object_get(return_value TSRMLS_CC);
+
+    cvPyrDown(image_object->cvptr, dst_object->cvptr, filter);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, pyrUp) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp;
+    long filter = CV_GAUSSIAN_5x5;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol", &image_zval, opencv_ce_image, &filter) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    temp = cvCreateImage(
+            cvSize(image_object->cvptr->width * 2, image_object->cvptr->height * 2),
+            image_object->cvptr->depth, image_object->cvptr->nChannels);
+    php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = opencv_image_object_get(return_value TSRMLS_CC);
+
+    cvPyrUp(image_object->cvptr, dst_object->cvptr, filter);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, canny) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp, *grey_image;
+    long lowThresh, highThresh, apertureSize;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Olll", &image_zval, opencv_ce_image, &lowThresh, &highThresh, &apertureSize) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+    
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    if (image_object->cvptr->nChannels > 1) {
+        grey_image = cvCreateImage(cvGetSize(image_object->cvptr), IPL_DEPTH_8U, 1);
+        cvCvtColor(image_object->cvptr, grey_image, CV_BGR2GRAY);
+    } else {
+        grey_image = image_object->cvptr;
+    }
+
+    temp = cvCreateImage(cvGetSize(image_object->cvptr), IPL_DEPTH_8U, 1);
+    php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    dst_object = opencv_image_object_get(return_value TSRMLS_CC);
+
+    cvCanny(grey_image, dst_object->cvptr, lowThresh, highThresh, apertureSize);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
 /* {{{ opencv_image_methods[] */
 const zend_function_entry opencv_image_methods[] = { 
-    //PHP_ME(OpenCV_Image, __construct, NULL, ZEND_ACC_CTOR|ZEND_ACC_STATIC)
+    PHP_ME(OpenCV_Image, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
     PHP_ME(OpenCV_Image, load, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
     PHP_ME(OpenCV_Image, save, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(OpenCV_Image, setImageROI, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, getImageROI, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(OpenCV_Image, resetImageROI, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(OpenCV_Image, smooth, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, laplace, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, sobel, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, erode, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, dilate, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, open, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, close, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, gradient, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, topHat, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, blackHat, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, resize, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, pyrDown, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, pyrUp, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, canny, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 /* }}} */
@@ -278,6 +635,13 @@ PHP_MINIT_FUNCTION(opencv_image)
     REGISTER_IMAGE_LONG_CONST("GAUSSIAN", CV_GAUSSIAN);
     REGISTER_IMAGE_LONG_CONST("MEDIAN", CV_MEDIAN);
     REGISTER_IMAGE_LONG_CONST("BILATERAL", CV_BILATERAL);
+
+    REGISTER_IMAGE_LONG_CONST("INTER_NN", CV_INTER_NN);
+    REGISTER_IMAGE_LONG_CONST("INTER_LINEAR", CV_INTER_LINEAR);
+    REGISTER_IMAGE_LONG_CONST("INTER_AREA", CV_INTER_AREA);
+    REGISTER_IMAGE_LONG_CONST("INTER_CUBIC", CV_INTER_CUBIC);
+
+    REGISTER_IMAGE_LONG_CONST("GAUSSIAN_5x5", CV_GAUSSIAN_5x5);
 
 	return SUCCESS;
 }
