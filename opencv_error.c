@@ -48,7 +48,8 @@ PHP_OPENCV_API void php_opencv_throw_exception(TSRMLS_D)
 	if (status >= 0) {
 		return;
 	}
-	error_message = estrdup(cvErrStr(status));
+
+	error_message = estrdup(cvErrorStr(status));
 	zend_throw_exception(opencv_ce_cvexception, error_message, status TSRMLS_CC);
 	efree(error_message);
 	return;

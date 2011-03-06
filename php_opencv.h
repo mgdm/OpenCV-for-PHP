@@ -89,15 +89,16 @@ PHP_MINIT_FUNCTION(opencv);
 PHP_MINIT_FUNCTION(opencv_error);
 PHP_MINIT_FUNCTION(opencv_mat);
 PHP_MINIT_FUNCTION(opencv_arr);
-PHP_MINIT_FUNCTION(opencv_iplimage);
+PHP_MINIT_FUNCTION(opencv_image);
 PHP_MSHUTDOWN_FUNCTION(opencv);
 PHP_MINFO_FUNCTION(opencv);
+PHP_RINIT_FUNCTION(opencv);
 
 extern zend_object_handlers opencv_std_object_handlers;
 extern zend_class_entry *opencv_ce_cvexception;
 extern zend_class_entry *opencv_ce_cvmat;
 extern zend_class_entry *opencv_ce_cvarr;
-extern zend_class_entry *opencv_ce_iplimage;
+extern zend_class_entry *opencv_ce_image;
 
 zend_error_handling opencv_original_error_handling;
 
@@ -115,11 +116,11 @@ typedef struct _opencv_mat_object {
 	CvMat *cvptr;
 } opencv_mat_object;
 
-typedef struct _opencv_iplimage_object {
+typedef struct _opencv_image_object {
 	zend_object std;
 	zend_bool constructed;
 	IplImage *cvptr;
-} opencv_iplimage_object;
+} opencv_image_object;
 
 #ifdef ZTS
 #define OPENCV_G(v) TSRMG(opencv_globals_id, zend_opencv_globals *, v)

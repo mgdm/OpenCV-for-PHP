@@ -24,7 +24,7 @@ if test "$PHP_OPENCV" != "no"; then
   PHP_SUBST(OPENCV_SHARED_LIBADD)
   AC_DEFINE(HAVE_OPENCV, 1, [ ])
 
-  PHP_NEW_EXTENSION(opencv, opencv.c opencv_error.c opencv_mat.c opencv_arr.c opencv_iplimage.c, $ext_shared)
+  PHP_NEW_EXTENSION(opencv, opencv.c opencv_error.c opencv_mat.c opencv_arr.c opencv_image.c, $ext_shared)
 
   EXT_OPENCV_HEADERS="php_opencv_api.h"
 
@@ -34,7 +34,7 @@ if test "$PHP_OPENCV" != "no"; then
 
   if test "$PHP_OPENCV" != "no"; then
       OPENCV_CHECK_DIR=$PHP_OPENCV
-      OPENCV_TEST_FILE=/include/opencv.h
+      OPENCV_TEST_FILE=opencv/include/cv.h
       OPENCV_LIBNAME=opencv
   fi
   condition="$OPENCV_CHECK_DIR$OPENCV_TEST_FILE"

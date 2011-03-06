@@ -62,7 +62,7 @@ zend_module_entry opencv_module_entry = {
 	opencv_functions,
 	PHP_MINIT(opencv),
 	PHP_MSHUTDOWN(opencv),
-	NULL,
+	PHP_RINIT(opencv),
 	NULL,
 	PHP_MINFO(opencv),
 #if ZEND_MODULE_API_NO >= 20010901
@@ -84,11 +84,11 @@ PHP_MINIT_FUNCTION(opencv)
 	REGISTER_INI_ENTRIES();
 	*/
 
-	cvSetErrMode(CV_ErrModeSilent);
 	PHP_MINIT(opencv_error)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_arr)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_mat)(INIT_FUNC_ARGS_PASSTHRU);
-	PHP_MINIT(opencv_iplimage)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(opencv_image)(INIT_FUNC_ARGS_PASSTHRU);
+//	cvSetErrMode(CV_ErrModeSilent);
 	return SUCCESS;
 }
 /* }}} */
@@ -103,6 +103,13 @@ PHP_MSHUTDOWN_FUNCTION(opencv)
 	return SUCCESS;
 }
 /* }}} */
+
+/* {{{ PHP_RINIT_FUNCTION */
+PHP_RINIT_FUNCTION(opencv)
+{
+	cvSetErrMode(CV_ErrModeSilent);
+	return SUCCESS;
+}
 
 /* {{{ PHP_MINFO_FUNCTION
  */

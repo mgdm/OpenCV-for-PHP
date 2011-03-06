@@ -99,6 +99,7 @@ const zend_function_entry opencv_mat_methods[] = {
 };
 /* }}} */
 
+
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(opencv_mat)
 {
