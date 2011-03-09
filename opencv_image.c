@@ -579,6 +579,43 @@ PHP_METHOD(OpenCV_Image, canny) {
 }
 /* }}} */
 
+/* {{{ */
+PHP_METHOD(OpenCV_Image, split) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp, *grey_image;
+    long lowThresh, highThresh, apertureSize, i;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O", &image_zval, opencv_ce_image) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+    
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+
+    IplImage **planes = calloc(image_object->cvptr->nChannels, sizeof(IplImage *));
+    zval **return_zvals = calloc(image_object->cvptr->nChannels, sizeof(zval *));
+
+    for (i = 0; i < image_object->cvptr->nChannels; i++) {
+        opencv_image_object *current_plane;
+        MAKE_STD_ZVAL(return_zvals[i]);
+        object_init_ex(return_zvals[i], opencv_ce_image);    
+        temp = cvCreateImage(cvGetSize(image_object->cvptr), IPL_DEPTH_8U, 1);
+        php_opencv_make_image_zval(temp, return_zvals[i]);
+        planes[i] = temp;
+    }
+
+    array_init(return_value);
+    cvSplit(image_object->cvptr, planes[0], planes[1], planes[2], planes[3]);
+    for (i = 0; i < image_object->cvptr->nChannels; i++) {
+        add_next_index_zval(return_value, return_zvals[i]);
+    }
+
+    php_opencv_throw_exception(TSRMLS_C);
+}
+
 /* {{{ opencv_image_methods[] */
 const zend_function_entry opencv_image_methods[] = { 
     PHP_ME(OpenCV_Image, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
@@ -601,6 +638,7 @@ const zend_function_entry opencv_image_methods[] = {
     PHP_ME(OpenCV_Image, pyrDown, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(OpenCV_Image, pyrUp, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(OpenCV_Image, canny, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, split, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 /* }}} */
