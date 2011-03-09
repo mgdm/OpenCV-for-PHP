@@ -675,6 +675,34 @@ PHP_METHOD(OpenCV_Image, backProject)
 }
 /* }}} */
 
+PHP_METHOD(OpenCV_Image, matchTemplate)
+{
+    opencv_image_object *image_object, *template_object, *dst_object;
+    zval *image_zval, *template_zval;
+    IplImage *temp;
+    long mode;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "OOl", &image_zval, opencv_ce_image, &template_zval, opencv_ce_image, &mode) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    template_object = opencv_image_object_get(template_zval TSRMLS_CC);
+
+    temp = cvCreateImage(cvSize(
+                image_object->cvptr->width - template_object->cvptr->width + 1,
+                image_object->cvptr->height - template_object->cvptr->height + 1),
+            IPL_DEPTH_32F, 1);
+
+    cvMatchTemplate(image_object->cvptr, template_object->cvptr, temp, mode);
+    php_opencv_make_image_zval(temp, return_value);
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
 /* {{{ opencv_image_methods[] */
 const zend_function_entry opencv_image_methods[] = { 
     PHP_ME(OpenCV_Image, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
@@ -700,6 +728,7 @@ const zend_function_entry opencv_image_methods[] = {
     PHP_ME(OpenCV_Image, split, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(OpenCV_Image, convertColor, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(OpenCV_Image, backProject, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, matchTemplate, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 /* }}} */
@@ -816,6 +845,12 @@ PHP_MINIT_FUNCTION(opencv_image)
     REGISTER_IMAGE_LONG_CONST("HLS2BGR", CV_HLS2BGR);
     REGISTER_IMAGE_LONG_CONST("HLS2RGB", CV_HLS2RGB);
 
+    REGISTER_IMAGE_LONG_CONST("TM_SQDIFF", CV_TM_SQDIFF);
+    REGISTER_IMAGE_LONG_CONST("TM_SQDIFF_NORMED", CV_TM_SQDIFF_NORMED);
+    REGISTER_IMAGE_LONG_CONST("TM_CCORR", CV_TM_CCORR);
+    REGISTER_IMAGE_LONG_CONST("TM_CCORR_NORMED", CV_TM_CCORR_NORMED);
+    REGISTER_IMAGE_LONG_CONST("TM_CCOEFF", CV_TM_CCOEFF);
+    REGISTER_IMAGE_LONG_CONST("TM_CCOEFF_NORMED", CV_TM_CCOEFF_NORMED);
 
 	return SUCCESS;
 }
