@@ -29,7 +29,7 @@
 
 zend_class_entry *opencv_ce_image;
 
-static inline opencv_image_object* opencv_image_object_get(zval *zobj TSRMLS_DC) {
+PHP_OPENCV_API opencv_image_object* opencv_image_object_get(zval *zobj TSRMLS_DC) {
     opencv_image_object *pobj = zend_object_store_get_object(zobj TSRMLS_CC);
     if (pobj->cvptr == NULL) {
         php_error(E_ERROR, "Internal surface object missing in %s wrapper, you must call parent::__construct in extended classes", Z_OBJCE_P(zobj)->name);
@@ -124,7 +124,7 @@ PHP_METHOD(OpenCV_Image, __construct)
 	php_opencv_throw_exception(TSRMLS_C);
 }
 /* }}} */
-
+ 
 PHP_METHOD(OpenCV_Image, load) {
     IplImage *temp;
     char *filename;
@@ -607,6 +607,10 @@ PHP_METHOD(OpenCV_Image, split) {
         planes[i] = temp;
     }
 
+    for (i = image_object->cvptr->nChannels; i < 4; i++) {
+        planes[i] = NULL;
+    }
+
     array_init(return_value);
     cvSplit(image_object->cvptr, planes[0], planes[1], planes[2], planes[3]);
     for (i = 0; i < image_object->cvptr->nChannels; i++) {
@@ -615,6 +619,61 @@ PHP_METHOD(OpenCV_Image, split) {
 
     php_opencv_throw_exception(TSRMLS_C);
 }
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, convertColor) {
+    opencv_image_object *image_object, *dst_object;
+    zval *image_zval;
+    IplImage *temp;
+    long code;
+    long channels = -1;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol|l", &image_zval, opencv_ce_image, &code, &channels) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+
+    if (channels <= 0) {
+        channels = image_object->cvptr->nChannels;
+    }
+
+    temp = cvCreateImage(cvGetSize(image_object->cvptr), image_object->cvptr->depth, channels);
+    cvCvtColor(image_object->cvptr, temp, code);
+    php_opencv_make_image_zval(temp, return_value);
+
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ */
+PHP_METHOD(OpenCV_Image, backProject)
+{
+    opencv_image_object *image_object, *dst_object;
+    opencv_histogram_object *hist_object;
+    zval *image_zval, *hist_zval;
+    IplImage *temp;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "OO", &image_zval, opencv_ce_image, &hist_zval, opencv_ce_histogram) == FAILURE) {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_RESTORE_ERRORS();
+
+    image_object = opencv_image_object_get(image_zval TSRMLS_CC);
+    hist_object = opencv_histogram_object_get(hist_zval TSRMLS_CC);
+
+    temp = cvCloneImage(image_object->cvptr);
+    cvCalcBackProject(&image_object->cvptr, temp, hist_object->cvptr);
+    php_opencv_make_image_zval(temp, return_value);
+
+    php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
 
 /* {{{ opencv_image_methods[] */
 const zend_function_entry opencv_image_methods[] = { 
@@ -639,6 +698,8 @@ const zend_function_entry opencv_image_methods[] = {
     PHP_ME(OpenCV_Image, pyrUp, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(OpenCV_Image, canny, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(OpenCV_Image, split, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, convertColor, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Image, backProject, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 /* }}} */
@@ -680,6 +741,81 @@ PHP_MINIT_FUNCTION(opencv_image)
     REGISTER_IMAGE_LONG_CONST("INTER_CUBIC", CV_INTER_CUBIC);
 
     REGISTER_IMAGE_LONG_CONST("GAUSSIAN_5x5", CV_GAUSSIAN_5x5);
+
+    /* Constants for conversion - these should be moved into a separate class, probably */
+    REGISTER_IMAGE_LONG_CONST("BGR2BGRA", CV_BGR2BGRA);
+    REGISTER_IMAGE_LONG_CONST("RGB2RGBA", CV_RGB2RGBA);
+    REGISTER_IMAGE_LONG_CONST("BGRA2BGR", CV_BGRA2BGR);
+    REGISTER_IMAGE_LONG_CONST("RGBA2RGB", CV_RGBA2RGB);
+    REGISTER_IMAGE_LONG_CONST("BGR2RGBA", CV_BGR2RGBA);
+    REGISTER_IMAGE_LONG_CONST("RGB2BGRA", CV_RGB2BGRA);
+    REGISTER_IMAGE_LONG_CONST("RGBA2BGR", CV_RGBA2BGR);
+    REGISTER_IMAGE_LONG_CONST("BGRA2RGB", CV_BGRA2RGB);
+    REGISTER_IMAGE_LONG_CONST("BGR2RGB", CV_BGR2RGB);
+    REGISTER_IMAGE_LONG_CONST("RGB2BGR", CV_RGB2BGR);
+    REGISTER_IMAGE_LONG_CONST("BGRA2RGBA", CV_BGRA2RGBA);
+    REGISTER_IMAGE_LONG_CONST("RGBA2BGRA", CV_RGBA2BGRA);
+    REGISTER_IMAGE_LONG_CONST("BGR2GRAY", CV_BGR2GRAY);
+    REGISTER_IMAGE_LONG_CONST("RGB2GRAY", CV_RGB2GRAY);
+    REGISTER_IMAGE_LONG_CONST("GRAY2BGR", CV_GRAY2BGR);
+    REGISTER_IMAGE_LONG_CONST("GRAY2RGB", CV_GRAY2RGB);
+    REGISTER_IMAGE_LONG_CONST("GRAY2BGRA", CV_GRAY2BGRA);
+    REGISTER_IMAGE_LONG_CONST("GRAY2RGBA", CV_GRAY2RGBA);
+    REGISTER_IMAGE_LONG_CONST("BGRA2GRAY", CV_BGRA2GRAY);
+    REGISTER_IMAGE_LONG_CONST("RGBA2GRAY", CV_RGBA2GRAY);
+    REGISTER_IMAGE_LONG_CONST("BGR2BGR565", CV_BGR2BGR565);
+    REGISTER_IMAGE_LONG_CONST("RGB2BGR565", CV_RGB2BGR565);
+    REGISTER_IMAGE_LONG_CONST("BGR5652BGR", CV_BGR5652BGR);
+    REGISTER_IMAGE_LONG_CONST("BGR5652RGB", CV_BGR5652RGB);
+    REGISTER_IMAGE_LONG_CONST("BGRA2BGR565", CV_BGRA2BGR565);
+    REGISTER_IMAGE_LONG_CONST("RGBA2BGR565", CV_RGBA2BGR565);
+    REGISTER_IMAGE_LONG_CONST("BGR5652BGRA", CV_BGR5652BGRA);
+    REGISTER_IMAGE_LONG_CONST("BGR5652RGBA", CV_BGR5652RGBA);
+    REGISTER_IMAGE_LONG_CONST("GRAY2BGR565", CV_GRAY2BGR565);
+    REGISTER_IMAGE_LONG_CONST("BGR5652GRAY", CV_BGR5652GRAY);
+    REGISTER_IMAGE_LONG_CONST("BGR2BGR555", CV_BGR2BGR555);
+    REGISTER_IMAGE_LONG_CONST("RGB2BGR555", CV_RGB2BGR555);
+    REGISTER_IMAGE_LONG_CONST("BGR5552BGR", CV_BGR5552BGR);
+    REGISTER_IMAGE_LONG_CONST("BGR5552RGB", CV_BGR5552RGB);
+    REGISTER_IMAGE_LONG_CONST("BGRA2BGR555", CV_BGRA2BGR555);
+    REGISTER_IMAGE_LONG_CONST("RGBA2BGR555", CV_RGBA2BGR555);
+    REGISTER_IMAGE_LONG_CONST("BGR5552BGRA", CV_BGR5552BGRA);
+    REGISTER_IMAGE_LONG_CONST("BGR5552RGBA", CV_BGR5552RGBA);
+    REGISTER_IMAGE_LONG_CONST("GRAY2BGR555", CV_GRAY2BGR555);
+    REGISTER_IMAGE_LONG_CONST("BGR5552GRAY", CV_BGR5552GRAY);
+    REGISTER_IMAGE_LONG_CONST("BGR2XYZ", CV_BGR2XYZ);
+    REGISTER_IMAGE_LONG_CONST("RGB2XYZ", CV_RGB2XYZ);
+    REGISTER_IMAGE_LONG_CONST("XYZ2BGR", CV_XYZ2BGR);
+    REGISTER_IMAGE_LONG_CONST("XYZ2RGB", CV_XYZ2RGB);
+    REGISTER_IMAGE_LONG_CONST("BGR2YCrCb", CV_BGR2YCrCb);
+    REGISTER_IMAGE_LONG_CONST("RGB2YCrCb", CV_RGB2YCrCb);
+    REGISTER_IMAGE_LONG_CONST("YCrCb2BGR", CV_YCrCb2BGR);
+    REGISTER_IMAGE_LONG_CONST("YCrCb2RGB", CV_YCrCb2RGB);
+    REGISTER_IMAGE_LONG_CONST("BGR2HSV", CV_BGR2HSV);
+    REGISTER_IMAGE_LONG_CONST("RGB2HSV", CV_RGB2HSV);
+    REGISTER_IMAGE_LONG_CONST("BGR2Lab", CV_BGR2Lab);
+    REGISTER_IMAGE_LONG_CONST("RGB2Lab", CV_RGB2Lab);
+    REGISTER_IMAGE_LONG_CONST("BayerBG2BGR", CV_BayerBG2BGR);
+    REGISTER_IMAGE_LONG_CONST("BayerGB2BGR", CV_BayerGB2BGR);
+    REGISTER_IMAGE_LONG_CONST("BayerRG2BGR", CV_BayerRG2BGR);
+    REGISTER_IMAGE_LONG_CONST("BayerGR2BGR", CV_BayerGR2BGR);
+    REGISTER_IMAGE_LONG_CONST("BayerBG2RGB", CV_BayerBG2RGB);
+    REGISTER_IMAGE_LONG_CONST("BayerGB2RGB", CV_BayerGB2RGB);
+    REGISTER_IMAGE_LONG_CONST("BayerRG2RGB", CV_BayerRG2RGB);
+    REGISTER_IMAGE_LONG_CONST("BayerGR2RGB", CV_BayerGR2RGB);
+    REGISTER_IMAGE_LONG_CONST("BGR2Luv", CV_BGR2Luv);
+    REGISTER_IMAGE_LONG_CONST("RGB2Luv", CV_RGB2Luv);
+    REGISTER_IMAGE_LONG_CONST("BGR2HLS", CV_BGR2HLS);
+    REGISTER_IMAGE_LONG_CONST("RGB2HLS", CV_RGB2HLS);
+    REGISTER_IMAGE_LONG_CONST("HSV2BGR", CV_HSV2BGR);
+    REGISTER_IMAGE_LONG_CONST("HSV2RGB", CV_HSV2RGB);
+    REGISTER_IMAGE_LONG_CONST("Lab2BGR", CV_Lab2BGR);
+    REGISTER_IMAGE_LONG_CONST("Lab2RGB", CV_Lab2RGB);
+    REGISTER_IMAGE_LONG_CONST("Luv2BGR", CV_Luv2BGR);
+    REGISTER_IMAGE_LONG_CONST("Luv2RGB", CV_Luv2RGB);
+    REGISTER_IMAGE_LONG_CONST("HLS2BGR", CV_HLS2BGR);
+    REGISTER_IMAGE_LONG_CONST("HLS2RGB", CV_HLS2RGB);
+
 
 	return SUCCESS;
 }

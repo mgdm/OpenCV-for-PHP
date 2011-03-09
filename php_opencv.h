@@ -90,6 +90,7 @@ PHP_MINIT_FUNCTION(opencv_error);
 PHP_MINIT_FUNCTION(opencv_mat);
 PHP_MINIT_FUNCTION(opencv_arr);
 PHP_MINIT_FUNCTION(opencv_image);
+PHP_MINIT_FUNCTION(opencv_histogram);
 PHP_MSHUTDOWN_FUNCTION(opencv);
 PHP_MINFO_FUNCTION(opencv);
 PHP_RINIT_FUNCTION(opencv);
@@ -99,10 +100,9 @@ extern zend_class_entry *opencv_ce_cvexception;
 extern zend_class_entry *opencv_ce_cvmat;
 extern zend_class_entry *opencv_ce_cvarr;
 extern zend_class_entry *opencv_ce_image;
+extern zend_class_entry *opencv_ce_histogram;
 
 zend_error_handling opencv_original_error_handling;
-
-PHP_OPENCV_API extern void php_opencv_throw_exception();
 
 typedef struct _opencv_arr_object {
 	zend_object std;
@@ -121,6 +121,17 @@ typedef struct _opencv_image_object {
 	zend_bool constructed;
 	IplImage *cvptr;
 } opencv_image_object;
+
+typedef struct _opencv_histogram_object {
+	zend_object std;
+	zend_bool constructed;
+	CvHistogram *cvptr;
+} opencv_histogram_object;
+
+PHP_OPENCV_API extern void php_opencv_throw_exception();
+PHP_OPENCV_API extern opencv_image_object* opencv_image_object_get(zval *zobj TSRMLS_DC);
+PHP_OPENCV_API extern opencv_histogram_object* opencv_histogram_object_get(zval *zobj TSRMLS_DC);
+
 
 #ifdef ZTS
 #define OPENCV_G(v) TSRMG(opencv_globals_id, zend_opencv_globals *, v)

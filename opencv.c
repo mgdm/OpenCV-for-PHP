@@ -16,7 +16,7 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id: header 297205 2010-03-30 21:09:07Z johannes $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -88,7 +88,8 @@ PHP_MINIT_FUNCTION(opencv)
 	PHP_MINIT(opencv_arr)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_mat)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_image)(INIT_FUNC_ARGS_PASSTHRU);
-//	cvSetErrMode(CV_ErrModeSilent);
+	PHP_MINIT(opencv_histogram)(INIT_FUNC_ARGS_PASSTHRU);
+	cvSetErrMode(CV_ErrModeSilent);
 	return SUCCESS;
 }
 /* }}} */
