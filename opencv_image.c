@@ -138,8 +138,17 @@ PHP_METHOD(OpenCV_Image, load) {
     }
     PHP_OPENCV_RESTORE_ERRORS();
 
+    php_opencv_basedir_check(filename TSRMLS_CC);     
+
     temp = (IplImage *) cvLoadImage(filename, mode);
-    *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
+    if (temp == NULL) {
+        char *error_message = estrdup("Could not open the video file - check it exists and the codec is available");
+        zend_throw_exception(opencv_ce_cvexception, error_message, 0 TSRMLS_CC);
+        efree(error_message);
+        return;
+    }
+
+    php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
     php_opencv_throw_exception(TSRMLS_C);
 }
 

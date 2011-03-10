@@ -46,6 +46,11 @@ extern zend_module_entry opencv_module_entry;
     zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "")
 #endif
 
+/* Constants for open_basedir checks */
+#define OPENCV_READ_WRITE_NO_ERROR 0
+#define OPENCV_READ_WRITE_SAFE_MODE_ERROR 1
+#define OPENCV_READ_WRITE_OPEN_BASEDIR_ERROR 2
+
 /* refcount macros */
 #ifndef Z_ADDREF_P
 #define Z_ADDREF_P(pz)                (pz)->refcount++
@@ -138,6 +143,7 @@ typedef struct _opencv_capture_object {
 
 
 PHP_OPENCV_API extern void php_opencv_throw_exception();
+PHP_OPENCV_API void php_opencv_basedir_check(const char *filename TSRMLS_DC);
 PHP_OPENCV_API extern opencv_image_object* opencv_image_object_get(zval *zobj TSRMLS_DC);
 PHP_OPENCV_API extern opencv_histogram_object* opencv_histogram_object_get(zval *zobj TSRMLS_DC);
 PHP_OPENCV_API zval *php_opencv_make_image_zval(IplImage *image, zval *image_zval TSRMLS_DC);
