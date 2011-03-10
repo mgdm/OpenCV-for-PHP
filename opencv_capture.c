@@ -73,7 +73,7 @@ PHP_OPENCV_API zend_object_value opencv_capture_object_new(zend_class_entry *ce 
     return retval;
 }
 
-PHP_METHOD(OpenCV_Capture, __construct)
+PHP_METHOD(OpenCV_Capture, createCameraCapture)
 {
 	long camera;
 	opencv_capture_object *capture_object;
@@ -87,10 +87,44 @@ PHP_METHOD(OpenCV_Capture, __construct)
 	}
 	PHP_OPENCV_RESTORE_ERRORS();
 
+    object_init_ex(return_value, opencv_ce_capture);
     temp = (CvCapture *) cvCaptureFromCAM(camera);
-    capture_object = zend_object_store_get_object(getThis() TSRMLS_CC);
+    capture_object = zend_object_store_get_object(return_value TSRMLS_CC);
     capture_object->cvptr = temp;
     
+	php_opencv_throw_exception(TSRMLS_C);
+}
+/* }}} */
+
+PHP_METHOD(OpenCV_Capture, createFileCapture)
+{
+    const char *filename;
+	int filename_len;
+	opencv_capture_object *capture_object;
+    CvCapture *temp;
+
+	PHP_OPENCV_ERROR_HANDLING();
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &filename, &filename_len) == FAILURE)
+    {
+		PHP_OPENCV_RESTORE_ERRORS();
+		return;
+	}
+	PHP_OPENCV_RESTORE_ERRORS();
+
+    php_opencv_basedir_check(filename TSRMLS_CC);     
+
+    object_init_ex(return_value, opencv_ce_capture);
+    capture_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    temp = (CvCapture *) cvCreateFileCapture(filename);
+
+    if (temp == NULL) {
+        char *error_message = estrdup("Could not open the video file - check it exists and the codec is available");
+        zend_throw_exception(opencv_ce_cvexception, error_message, 0 TSRMLS_CC);
+        efree(error_message);
+        return;
+    }
+
+    capture_object->cvptr = temp;
 	php_opencv_throw_exception(TSRMLS_C);
 }
 /* }}} */
@@ -157,12 +191,64 @@ PHP_METHOD(OpenCV_Capture, queryFrame)
     php_opencv_throw_exception();
 }
 
+PHP_METHOD(OpenCV_Capture, getProperty)
+{
+    zval *capture_zval;
+    opencv_capture_object *capture_object;
+    IplImage *temp;
+    double val;
+    long property;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol", &capture_zval, opencv_ce_capture, &property) == FAILURE)
+    {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_ERROR_HANDLING();
+
+    capture_object = opencv_capture_object_get(getThis() TSRMLS_CC);
+    val = cvGetCaptureProperty(capture_object->cvptr, property);
+    php_opencv_throw_exception();
+
+    /* FourCC is special */
+    if (property == CV_CAP_PROP_FOURCC) {
+        char *unpacked_val = (char *) &val;
+        RETURN_STRING(unpacked_val, 1);
+    }
+    RETURN_LONG(val);
+}
+
+PHP_METHOD(OpenCV_Capture, setProperty)
+{
+    zval *capture_zval;
+    opencv_capture_object *capture_object;
+    IplImage *temp;
+    double val;
+    long property;
+
+    PHP_OPENCV_ERROR_HANDLING();
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Old", &capture_zval, opencv_ce_capture, &property, &val) == FAILURE)
+    {
+        PHP_OPENCV_RESTORE_ERRORS();
+        return;
+    }
+    PHP_OPENCV_ERROR_HANDLING();
+
+    capture_object = opencv_capture_object_get(getThis() TSRMLS_CC);
+    val = cvSetCaptureProperty(capture_object->cvptr, property, val);
+    php_opencv_throw_exception();
+}
+
 /* {{{ opencv_capture_methods[] */
 const zend_function_entry opencv_capture_methods[] = { 
-    PHP_ME(OpenCV_Capture, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+    PHP_ME(OpenCV_Capture, createCameraCapture, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+    PHP_ME(OpenCV_Capture, createFileCapture, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
     PHP_ME(OpenCV_Capture, grabFrame, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(OpenCV_Capture, retrieveFrame, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(OpenCV_Capture, queryFrame, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Capture, getProperty, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(OpenCV_Capture, setProperty, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 /* }}} */
@@ -175,12 +261,29 @@ PHP_MINIT_FUNCTION(opencv_capture)
 	INIT_NS_CLASS_ENTRY(ce, "OpenCV", "Capture", opencv_capture_methods);
 	opencv_ce_capture = zend_register_internal_class(&ce TSRMLS_CC);
 	
-    #define REGISTER_HIST_LONG_CONST(const_name, value) \
+    #define REGISTER_CAPTURE_LONG_CONST(const_name, value) \
 	zend_declare_class_constant_long(opencv_ce_capture, const_name, sizeof(const_name)-1, (long)value TSRMLS_CC); \
 	REGISTER_LONG_CONSTANT(#value,  value,  CONST_CS | CONST_PERSISTENT);
 
-	REGISTER_HIST_LONG_CONST("TYPE_SPARSE", CV_HIST_SPARSE);
-    REGISTER_HIST_LONG_CONST("TYPE_ARRAY", CV_HIST_ARRAY);
+    REGISTER_CAPTURE_LONG_CONST("PROP_POS_MSEC", CV_CAP_PROP_POS_MSEC);
+    REGISTER_CAPTURE_LONG_CONST("PROP_POS_FRAMES", CV_CAP_PROP_POS_FRAMES);
+    REGISTER_CAPTURE_LONG_CONST("PROP_POS_AVI_RATIO", CV_CAP_PROP_POS_AVI_RATIO);
+    REGISTER_CAPTURE_LONG_CONST("PROP_FRAME_WIDTH", CV_CAP_PROP_FRAME_WIDTH);
+    REGISTER_CAPTURE_LONG_CONST("PROP_FRAME_HEIGHT", CV_CAP_PROP_FRAME_HEIGHT);
+    REGISTER_CAPTURE_LONG_CONST("PROP_FPS", CV_CAP_PROP_FPS);
+    REGISTER_CAPTURE_LONG_CONST("PROP_FOURCC", CV_CAP_PROP_FOURCC);
+    REGISTER_CAPTURE_LONG_CONST("PROP_FRAME_COUNT", CV_CAP_PROP_FRAME_COUNT);
+    REGISTER_CAPTURE_LONG_CONST("PROP_FORMAT", CV_CAP_PROP_FORMAT);
+    REGISTER_CAPTURE_LONG_CONST("PROP_MODE", CV_CAP_PROP_MODE);
+    REGISTER_CAPTURE_LONG_CONST("PROP_BRIGHTNESS", CV_CAP_PROP_BRIGHTNESS);
+    REGISTER_CAPTURE_LONG_CONST("PROP_CONTRAST", CV_CAP_PROP_CONTRAST);
+    REGISTER_CAPTURE_LONG_CONST("PROP_SATURATION", CV_CAP_PROP_SATURATION);
+    REGISTER_CAPTURE_LONG_CONST("PROP_HUE", CV_CAP_PROP_HUE);
+    REGISTER_CAPTURE_LONG_CONST("PROP_GAIN", CV_CAP_PROP_GAIN);
+    REGISTER_CAPTURE_LONG_CONST("PROP_EXPOSURE", CV_CAP_PROP_EXPOSURE);
+    REGISTER_CAPTURE_LONG_CONST("PROP_CONVERT_RGB", CV_CAP_PROP_CONVERT_RGB);
+    REGISTER_CAPTURE_LONG_CONST("PROP_WHITE_BALANCE", CV_CAP_PROP_WHITE_BALANCE);
+    REGISTER_CAPTURE_LONG_CONST("PROP_RECTIFICATION", CV_CAP_PROP_RECTIFICATION);
 
 	return SUCCESS;
 }
