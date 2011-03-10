@@ -84,6 +84,7 @@ extern zend_module_entry opencv_module_entry;
 #endif
 
 #include <cv.h>
+#include <highgui.h>
 
 PHP_MINIT_FUNCTION(opencv);
 PHP_MINIT_FUNCTION(opencv_error);
@@ -91,6 +92,7 @@ PHP_MINIT_FUNCTION(opencv_mat);
 PHP_MINIT_FUNCTION(opencv_arr);
 PHP_MINIT_FUNCTION(opencv_image);
 PHP_MINIT_FUNCTION(opencv_histogram);
+PHP_MINIT_FUNCTION(opencv_capture);
 PHP_MSHUTDOWN_FUNCTION(opencv);
 PHP_MINFO_FUNCTION(opencv);
 PHP_RINIT_FUNCTION(opencv);
@@ -128,9 +130,17 @@ typedef struct _opencv_histogram_object {
 	CvHistogram *cvptr;
 } opencv_histogram_object;
 
+typedef struct _opencv_capture_object {
+	zend_object std;
+	zend_bool constructed;
+	CvCapture* cvptr;
+} opencv_capture_object;
+
+
 PHP_OPENCV_API extern void php_opencv_throw_exception();
 PHP_OPENCV_API extern opencv_image_object* opencv_image_object_get(zval *zobj TSRMLS_DC);
 PHP_OPENCV_API extern opencv_histogram_object* opencv_histogram_object_get(zval *zobj TSRMLS_DC);
+PHP_OPENCV_API zval *php_opencv_make_image_zval(IplImage *image, zval *image_zval TSRMLS_DC);
 
 
 #ifdef ZTS

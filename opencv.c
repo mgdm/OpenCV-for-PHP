@@ -89,6 +89,7 @@ PHP_MINIT_FUNCTION(opencv)
 	PHP_MINIT(opencv_mat)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_image)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_histogram)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(opencv_capture)(INIT_FUNC_ARGS_PASSTHRU);
 	cvSetErrMode(CV_ErrModeSilent);
 	return SUCCESS;
 }
