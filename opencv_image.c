@@ -43,7 +43,7 @@ PHP_OPENCV_API opencv_image_object* opencv_image_object_get(zval *zobj TSRMLS_DC
         MAKE_STD_ZVAL(temp_prop); \
         ZVAL_LONG(temp_prop, MEMBER); \
         zend_hash_update(Z_OBJPROP_P(image_zval), PROPERTY, sizeof(PROPERTY), (void **) &temp_prop, sizeof(zval *), NULL); \
-    } while(0);
+    } while(0)
 
 
 PHP_OPENCV_API zval *php_opencv_make_image_zval(IplImage *image, zval *image_zval TSRMLS_DC) {
