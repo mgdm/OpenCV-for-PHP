@@ -11,6 +11,7 @@
 /build
 /config.h
 /config.h.in
+/config.h.in~
 /config.nice
 /config.sub
 /configure
