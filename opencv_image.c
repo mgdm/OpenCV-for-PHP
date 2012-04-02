@@ -88,11 +88,11 @@ static zend_object_value opencv_image_object_new(zend_class_entry *ce TSRMLS_DC)
 
     image = ecalloc(1, sizeof(opencv_image_object));
 
-    image->std.ce = ce; 
+    image->std.ce = ce;
     image->cvptr = NULL;
 
     ALLOC_HASHTABLE(image->std.properties);
-    zend_hash_init(image->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0); 
+    zend_hash_init(image->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
 #if PHP_VERSION_ID < 50399
     zend_hash_copy(image->std.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref,(void *) &temp, sizeof(zval *));
 #else
@@ -124,7 +124,7 @@ PHP_METHOD(OpenCV_Image, __construct)
 	php_opencv_throw_exception(TSRMLS_C);
 }
 /* }}} */
- 
+
 PHP_METHOD(OpenCV_Image, load) {
     IplImage *temp;
     char *filename;
@@ -138,7 +138,7 @@ PHP_METHOD(OpenCV_Image, load) {
     }
     PHP_OPENCV_RESTORE_ERRORS();
 
-    php_opencv_basedir_check(filename TSRMLS_CC);     
+    php_opencv_basedir_check(filename TSRMLS_CC);
 
     temp = (IplImage *) cvLoadImage(filename, mode);
     if (temp == NULL) {
@@ -570,7 +570,7 @@ PHP_METHOD(OpenCV_Image, canny) {
         return;
     }
     PHP_OPENCV_RESTORE_ERRORS();
-    
+
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
     if (image_object->cvptr->nChannels > 1) {
         grey_image = cvCreateImage(cvGetSize(image_object->cvptr), IPL_DEPTH_8U, 1);
@@ -601,7 +601,7 @@ PHP_METHOD(OpenCV_Image, split) {
         return;
     }
     PHP_OPENCV_RESTORE_ERRORS();
-    
+
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
 
     IplImage **planes = calloc(image_object->cvptr->nChannels, sizeof(IplImage *));
@@ -610,7 +610,7 @@ PHP_METHOD(OpenCV_Image, split) {
     for (i = 0; i < image_object->cvptr->nChannels; i++) {
         opencv_image_object *current_plane;
         MAKE_STD_ZVAL(return_zvals[i]);
-        object_init_ex(return_zvals[i], opencv_ce_image);    
+        object_init_ex(return_zvals[i], opencv_ce_image);
         temp = cvCreateImage(cvGetSize(image_object->cvptr), IPL_DEPTH_8U, 1);
         php_opencv_make_image_zval(temp, return_zvals[i]);
         planes[i] = temp;
@@ -753,7 +753,7 @@ PHP_METHOD(OpenCV_Image, haarDetectObjects)
     PHP_OPENCV_RESTORE_ERRORS();
 
 	cascade = (CvHaarClassifierCascade *) cvLoad(cascade_name, 0, 0, 0);
-    
+
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
     if (image_object->cvptr->nChannels > 1) {
         grey_image = cvCreateImage(cvGetSize(image_object->cvptr), IPL_DEPTH_8U, 1);
@@ -763,8 +763,11 @@ PHP_METHOD(OpenCV_Image, haarDetectObjects)
     }
 	cvEqualizeHist(grey_image, grey_image);
 	cvClearMemStorage(storage);
+	#if ( (CV_MAJOR_VERSION >= 2) && (CV_MINOR_VERSION >= 3) )
+	CvSeq *objects = cvHaarDetectObjects(grey_image, cascade, storage, 1.1, 3, 0, cvSize(20, 20), cvSize(0, 0));
+	#else
 	CvSeq *objects = cvHaarDetectObjects(grey_image, cascade, storage, 1.1, 3, 0, cvSize(20, 20));
-
+	#endif
 	array_init(return_value);
     for (i = 0; i < (objects ? objects->total : 0); i++) {
 		zval *temp;
@@ -776,7 +779,7 @@ PHP_METHOD(OpenCV_Image, haarDetectObjects)
 		add_assoc_long(temp, "y", r->y);
 		add_assoc_long(temp, "width", r->width);
 		add_assoc_long(temp, "height", r->height);
-		
+
         add_next_index_zval(return_value, temp);
     }
 
@@ -786,7 +789,7 @@ PHP_METHOD(OpenCV_Image, haarDetectObjects)
 /* }}} */
 
 /* {{{ opencv_image_methods[] */
-const zend_function_entry opencv_image_methods[] = { 
+const zend_function_entry opencv_image_methods[] = {
     PHP_ME(OpenCV_Image, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
     PHP_ME(OpenCV_Image, load, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
     PHP_ME(OpenCV_Image, save, NULL, ZEND_ACC_PUBLIC)

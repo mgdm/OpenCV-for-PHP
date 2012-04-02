@@ -58,11 +58,11 @@ PHP_OPENCV_API zend_object_value opencv_capture_object_new(zend_class_entry *ce 
 
     capture = ecalloc(1, sizeof(opencv_capture_object));
 
-    capture->std.ce = ce; 
+	capture->std.ce = ce;
     capture->cvptr = NULL;
 
     ALLOC_HASHTABLE(capture->std.properties);
-    zend_hash_init(capture->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0); 
+    zend_hash_init(capture->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
 #if PHP_VERSION_ID < 50399
     zend_hash_copy(capture->std.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref,(void *) &temp, sizeof(zval *));
 #else
@@ -91,7 +91,7 @@ PHP_METHOD(OpenCV_Capture, createCameraCapture)
     temp = (CvCapture *) cvCaptureFromCAM(camera);
     capture_object = zend_object_store_get_object(return_value TSRMLS_CC);
     capture_object->cvptr = temp;
-    
+
 	php_opencv_throw_exception(TSRMLS_C);
 }
 /* }}} */
@@ -111,7 +111,7 @@ PHP_METHOD(OpenCV_Capture, createFileCapture)
 	}
 	PHP_OPENCV_RESTORE_ERRORS();
 
-    php_opencv_basedir_check(filename TSRMLS_CC);     
+    php_opencv_basedir_check(filename TSRMLS_CC);
 
     object_init_ex(return_value, opencv_ce_capture);
     capture_object = zend_object_store_get_object(return_value TSRMLS_CC);
@@ -241,7 +241,7 @@ PHP_METHOD(OpenCV_Capture, setProperty)
 }
 
 /* {{{ opencv_capture_methods[] */
-const zend_function_entry opencv_capture_methods[] = { 
+const zend_function_entry opencv_capture_methods[] = {
     PHP_ME(OpenCV_Capture, createCameraCapture, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
     PHP_ME(OpenCV_Capture, createFileCapture, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
     PHP_ME(OpenCV_Capture, grabFrame, NULL, ZEND_ACC_PUBLIC)
@@ -260,7 +260,7 @@ PHP_MINIT_FUNCTION(opencv_capture)
 
 	INIT_NS_CLASS_ENTRY(ce, "OpenCV", "Capture", opencv_capture_methods);
 	opencv_ce_capture = zend_register_internal_class(&ce TSRMLS_CC);
-	
+
     #define REGISTER_CAPTURE_LONG_CONST(const_name, value) \
 	zend_declare_class_constant_long(opencv_ce_capture, const_name, sizeof(const_name)-1, (long)value TSRMLS_CC); \
 	REGISTER_LONG_CONSTANT(#value,  value,  CONST_CS | CONST_PERSISTENT);
@@ -282,8 +282,56 @@ PHP_MINIT_FUNCTION(opencv_capture)
     REGISTER_CAPTURE_LONG_CONST("PROP_GAIN", CV_CAP_PROP_GAIN);
     REGISTER_CAPTURE_LONG_CONST("PROP_EXPOSURE", CV_CAP_PROP_EXPOSURE);
     REGISTER_CAPTURE_LONG_CONST("PROP_CONVERT_RGB", CV_CAP_PROP_CONVERT_RGB);
+
+    #ifdef CV_CAP_PROP_WHITE_BALANCE
     REGISTER_CAPTURE_LONG_CONST("PROP_WHITE_BALANCE", CV_CAP_PROP_WHITE_BALANCE);
+    #endif
+
+    #ifdef CV_CAP_PROP_WHITE_BALANCE_BLUE_U
+    REGISTER_CAPTURE_LONG_CONST("PROP_WHITE_BALANCE_BLUE_U", CV_CAP_PROP_WHITE_BALANCE_BLUE_U);
+    #endif
+
     REGISTER_CAPTURE_LONG_CONST("PROP_RECTIFICATION", CV_CAP_PROP_RECTIFICATION);
+
+    #ifdef CV_CAP_PROP_MONOCROME
+    REGISTER_CAPTURE_LONG_CONST("PROP_MONOCHROME", CV_CAP_PROP_MONOCROME);
+    #endif
+
+    #ifdef CV_CAP_PROP_SHARPNESS
+    REGISTER_CAPTURE_LONG_CONST("PROP_SHARPNESS", CV_CAP_PROP_SHARPNESS);
+    #endif
+
+    #ifdef CV_CAP_PROP_AUTO_EXPOSURE
+    REGISTER_CAPTURE_LONG_CONST("PROP_AUTO_EXPOSURE", CV_CAP_PROP_AUTO_EXPOSURE);
+    #endif
+
+    #ifdef CV_CAP_PROP_GAMMA
+    REGISTER_CAPTURE_LONG_CONST("PROP_GAMMA", CV_CAP_PROP_GAMMA);
+    #endif
+
+    #ifdef CV_CAP_PROP_TEMPERATURE
+    REGISTER_CAPTURE_LONG_CONST("PROP_TEMPERATURE", CV_CAP_PROP_TEMPERATURE);
+    #endif
+
+    #ifdef CV_CAP_PROP_GAMMA
+    REGISTER_CAPTURE_LONG_CONST("PROP_GAMMA", CV_CAP_PROP_GAMMA);
+    #endif
+
+    #ifdef CV_CAP_PROP_TRIGGER
+    REGISTER_CAPTURE_LONG_CONST("PROP_TRIGGER", CV_CAP_PROP_TRIGGER);
+    #endif
+
+    #ifdef CV_CAP_PROP_TRIGGER_DELAY
+    REGISTER_CAPTURE_LONG_CONST("PROP_TRIGGER_DELAY", CV_CAP_PROP_TRIGGER_DELAY);
+    #endif
+
+    #ifdef CV_CAP_PROP_WHITE_BALANCE_RED_V
+    REGISTER_CAPTURE_LONG_CONST("PROP_WHITE_BALANCE_RED_V", CV_CAP_PROP_WHITE_BALANCE_RED_V);
+    #endif
+
+    #ifdef CV_CAP_PROP_MAX_DC1394
+    REGISTER_CAPTURE_LONG_CONST("PROP_MAX_DC1394", CV_CAP_PROP_MAX_DC1394);
+    #endif
 
 	return SUCCESS;
 }
