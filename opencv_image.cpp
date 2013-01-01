@@ -22,15 +22,12 @@
 #include "config.h"
 #endif
 
-#include "php.h"
 #include "php_opencv.h"
-#include "zend_exceptions.h"
-#include <highgui.h>
 
 zend_class_entry *opencv_ce_image;
 
 PHP_OPENCV_API opencv_image_object* opencv_image_object_get(zval *zobj TSRMLS_DC) {
-    opencv_image_object *pobj = zend_object_store_get_object(zobj TSRMLS_CC);
+    opencv_image_object *pobj = (opencv_image_object *) zend_object_store_get_object(zobj TSRMLS_CC);
     if (pobj->cvptr == NULL) {
         php_error(E_ERROR, "Internal surface object missing in %s wrapper, you must call parent::__construct in extended classes", Z_OBJCE_P(zobj)->name);
     }
@@ -86,7 +83,7 @@ static zend_object_value opencv_image_object_new(zend_class_entry *ce TSRMLS_DC)
     opencv_image_object *image;
     zval *temp;
 
-    image = ecalloc(1, sizeof(opencv_image_object));
+    image = (opencv_image_object *) ecalloc(1, sizeof(opencv_image_object));
 
     image->std.ce = ce;
     image->cvptr = NULL;
@@ -260,7 +257,7 @@ PHP_METHOD(OpenCV_Image, smooth) {
 
     temp = cvCloneImage(image_object->cvptr);
     *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
-    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    dst_object = (opencv_image_object *) zend_object_store_get_object(return_value TSRMLS_CC);
 
     cvSmooth(image_object->cvptr, dst_object->cvptr, smoothType, params[0], params[1], params[2], params[3]);
     php_opencv_throw_exception(TSRMLS_C);
@@ -284,7 +281,7 @@ PHP_METHOD(OpenCV_Image, laplace) {
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
     temp = cvCreateImage(cvGetSize(image_object->cvptr), IPL_DEPTH_16S, image_object->cvptr->nChannels);
     *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
-    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    dst_object = (opencv_image_object *) zend_object_store_get_object(return_value TSRMLS_CC);
 
     cvLaplace(image_object->cvptr, dst_object->cvptr, apertureSize);
     php_opencv_throw_exception(TSRMLS_C);
@@ -308,7 +305,7 @@ PHP_METHOD(OpenCV_Image, sobel) {
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
     temp = cvCreateImage(cvGetSize(image_object->cvptr), IPL_DEPTH_16S, image_object->cvptr->nChannels);
     *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
-    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    dst_object = (opencv_image_object *) zend_object_store_get_object(return_value TSRMLS_CC);
 
     cvSobel(image_object->cvptr, dst_object->cvptr, xorder, yorder, apertureSize);
     php_opencv_throw_exception(TSRMLS_C);
@@ -332,7 +329,7 @@ PHP_METHOD(OpenCV_Image, erode) {
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
     temp = cvCloneImage(image_object->cvptr);
     *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
-    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    dst_object = (opencv_image_object *) zend_object_store_get_object(return_value TSRMLS_CC);
 
     cvErode(image_object->cvptr, dst_object->cvptr, NULL, iterations);
     php_opencv_throw_exception(TSRMLS_C);
@@ -356,7 +353,7 @@ PHP_METHOD(OpenCV_Image, dilate) {
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
     temp = cvCloneImage(image_object->cvptr);
     *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
-    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    dst_object = (opencv_image_object *) zend_object_store_get_object(return_value TSRMLS_CC);
 
     cvDilate(image_object->cvptr, dst_object->cvptr, NULL, iterations);
     php_opencv_throw_exception(TSRMLS_C);
@@ -380,7 +377,7 @@ PHP_METHOD(OpenCV_Image, open) {
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
     temp = cvCloneImage(image_object->cvptr);
     *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
-    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    dst_object = (opencv_image_object *) zend_object_store_get_object(return_value TSRMLS_CC);
 
     cvMorphologyEx(image_object->cvptr, dst_object->cvptr, NULL, NULL, CV_MOP_OPEN, iterations);
     php_opencv_throw_exception(TSRMLS_C);
@@ -404,7 +401,7 @@ PHP_METHOD(OpenCV_Image, close) {
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
     temp = cvCloneImage(image_object->cvptr);
     *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
-    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    dst_object = (opencv_image_object *) zend_object_store_get_object(return_value TSRMLS_CC);
 
     cvMorphologyEx(image_object->cvptr, dst_object->cvptr, NULL, NULL, CV_MOP_CLOSE, iterations);
     php_opencv_throw_exception(TSRMLS_C);
@@ -429,7 +426,7 @@ PHP_METHOD(OpenCV_Image, gradient) {
     temp = cvCloneImage(image_object->cvptr);
     temp2 = cvCloneImage(image_object->cvptr);
     *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
-    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    dst_object = (opencv_image_object *) zend_object_store_get_object(return_value TSRMLS_CC);
 
     cvMorphologyEx(image_object->cvptr, dst_object->cvptr, temp2, NULL, CV_MOP_GRADIENT, iterations);
     php_opencv_throw_exception(TSRMLS_C);
@@ -453,7 +450,7 @@ PHP_METHOD(OpenCV_Image, topHat) {
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
     temp = cvCloneImage(image_object->cvptr);
     *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
-    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    dst_object = (opencv_image_object *) zend_object_store_get_object(return_value TSRMLS_CC);
 
     cvMorphologyEx(image_object->cvptr, dst_object->cvptr, NULL, NULL, CV_MOP_TOPHAT, iterations);
     php_opencv_throw_exception(TSRMLS_C);
@@ -477,7 +474,7 @@ PHP_METHOD(OpenCV_Image, blackHat) {
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
     temp = cvCloneImage(image_object->cvptr);
     *return_value = *php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
-    dst_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    dst_object = (opencv_image_object *) zend_object_store_get_object(return_value TSRMLS_CC);
 
     cvMorphologyEx(image_object->cvptr, dst_object->cvptr, NULL, NULL, CV_MOP_BLACKHAT, iterations);
     php_opencv_throw_exception(TSRMLS_C);
@@ -604,8 +601,8 @@ PHP_METHOD(OpenCV_Image, split) {
 
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
 
-    IplImage **planes = calloc(image_object->cvptr->nChannels, sizeof(IplImage *));
-    zval **return_zvals = calloc(image_object->cvptr->nChannels, sizeof(zval *));
+    IplImage **planes = (IplImage **) ecalloc(image_object->cvptr->nChannels, sizeof(IplImage *));
+    zval **return_zvals = (zval **) ecalloc(image_object->cvptr->nChannels, sizeof(zval *));
 
     for (i = 0; i < image_object->cvptr->nChannels; i++) {
         opencv_image_object *current_plane;

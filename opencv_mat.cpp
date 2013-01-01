@@ -22,14 +22,12 @@
 #include "config.h"
 #endif
 
-#include "php.h"
 #include "php_opencv.h"
-#include "zend_exceptions.h"
 
 zend_class_entry *opencv_ce_cvmat;
 
 static inline opencv_mat_object* opencv_mat_object_get(zval *zobj TSRMLS_DC) {
-    opencv_mat_object *pobj = zend_object_store_get_object(zobj TSRMLS_CC);
+    opencv_mat_object *pobj = (opencv_mat_object *) zend_object_store_get_object(zobj TSRMLS_CC);
     if (pobj->cvptr == NULL) {
         php_error(E_ERROR, "Internal surface object missing in %s wrapper, you must call parent::__construct in extended classes", Z_OBJCE_P(zobj)->name);
     }
@@ -44,7 +42,7 @@ void opencv_mat_object_destroy(void *object TSRMLS_DC)
     FREE_HASHTABLE(mat->std.properties);
 
     if(mat->cvptr != NULL){
-        cvRelease(&mat->cvptr);
+        cvRelease((void **) &mat->cvptr);
     }
     efree(mat);
 }
@@ -55,7 +53,7 @@ static zend_object_value opencv_mat_object_new(zend_class_entry *ce TSRMLS_DC)
     opencv_mat_object *mat;
     zval *temp;
 
-    mat = ecalloc(1, sizeof(opencv_mat_object));
+    mat = (opencv_mat_object *) ecalloc(1, sizeof(opencv_mat_object));
 
     mat->std.ce = ce; 
     mat->cvptr = NULL;

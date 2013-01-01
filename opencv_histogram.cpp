@@ -22,15 +22,12 @@
 #include "config.h"
 #endif
 
-#include "php.h"
 #include "php_opencv.h"
-#include "zend_exceptions.h"
-#include <highgui.h>
 
 zend_class_entry *opencv_ce_histogram;
 
 PHP_OPENCV_API opencv_histogram_object* opencv_histogram_object_get(zval *zobj TSRMLS_DC) {
-    opencv_histogram_object *pobj = zend_object_store_get_object(zobj TSRMLS_CC);
+    opencv_histogram_object *pobj = (opencv_histogram_object *) zend_object_store_get_object(zobj TSRMLS_CC);
     if (pobj->cvptr == NULL) {
         php_error(E_ERROR, "Internal surface object missing in %s wrapper, you must call parent::__construct in extended classes", Z_OBJCE_P(zobj)->name);
     }
@@ -56,7 +53,7 @@ PHP_OPENCV_API zend_object_value opencv_histogram_object_new(zend_class_entry *c
     opencv_histogram_object *histogram;
     zval *temp;
 
-    histogram = ecalloc(1, sizeof(opencv_histogram_object));
+    histogram = (opencv_histogram_object *) ecalloc(1, sizeof(opencv_histogram_object));
 
     histogram->std.ce = ce; 
     histogram->cvptr = NULL;
@@ -92,7 +89,7 @@ PHP_METHOD(OpenCV_Histogram, __construct)
     cast_sizes = sizes;
 
     temp = cvCreateHist(bins, &cast_sizes, type, NULL, 1);
-    histogram_object = zend_object_store_get_object(getThis() TSRMLS_CC);
+    histogram_object = (opencv_histogram_object *) zend_object_store_get_object(getThis() TSRMLS_CC);
     histogram_object->cvptr = temp;
     
 	php_opencv_throw_exception(TSRMLS_C);

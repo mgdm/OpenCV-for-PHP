@@ -22,15 +22,12 @@
 #include "config.h"
 #endif
 
-#include "php.h"
 #include "php_opencv.h"
-#include "zend_exceptions.h"
-#include <highgui.h>
 
 zend_class_entry *opencv_ce_capture;
 
 PHP_OPENCV_API opencv_capture_object* opencv_capture_object_get(zval *zobj TSRMLS_DC) {
-    opencv_capture_object *pobj = zend_object_store_get_object(zobj TSRMLS_CC);
+    opencv_capture_object *pobj = (opencv_capture_object *) zend_object_store_get_object(zobj TSRMLS_CC);
     if (pobj->cvptr == NULL) {
         php_error(E_ERROR, "Internal surface object missing in %s wrapper, you must call parent::__construct in extended classes", Z_OBJCE_P(zobj)->name);
     }
@@ -56,7 +53,7 @@ PHP_OPENCV_API zend_object_value opencv_capture_object_new(zend_class_entry *ce 
     opencv_capture_object *capture;
     zval *temp;
 
-    capture = ecalloc(1, sizeof(opencv_capture_object));
+    capture = (opencv_capture_object *) ecalloc(1, sizeof(opencv_capture_object));
 
 	capture->std.ce = ce;
     capture->cvptr = NULL;
@@ -89,7 +86,7 @@ PHP_METHOD(OpenCV_Capture, createCameraCapture)
 
     object_init_ex(return_value, opencv_ce_capture);
     temp = (CvCapture *) cvCaptureFromCAM(camera);
-    capture_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    capture_object = (opencv_capture_object *) zend_object_store_get_object(return_value TSRMLS_CC);
     capture_object->cvptr = temp;
 
 	php_opencv_throw_exception(TSRMLS_C);
@@ -114,7 +111,7 @@ PHP_METHOD(OpenCV_Capture, createFileCapture)
     php_opencv_basedir_check(filename TSRMLS_CC);
 
     object_init_ex(return_value, opencv_ce_capture);
-    capture_object = zend_object_store_get_object(return_value TSRMLS_CC);
+    capture_object = (opencv_capture_object *) zend_object_store_get_object(return_value TSRMLS_CC);
     temp = (CvCapture *) cvCreateFileCapture(filename);
 
     if (temp == NULL) {

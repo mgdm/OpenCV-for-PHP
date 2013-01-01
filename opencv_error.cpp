@@ -22,8 +22,6 @@
 #include "config.h"
 #endif
 
-#include "php.h"
-#include "zend_exceptions.h"
 #include "php_opencv.h"
 
 zend_class_entry *opencv_ce_cvexception;
