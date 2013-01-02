@@ -61,6 +61,7 @@ extern zend_module_entry opencv_module_entry;
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+using namespace cv;
 
 PHP_MINIT_FUNCTION(opencv);
 PHP_MINIT_FUNCTION(opencv_error);
@@ -90,7 +91,7 @@ typedef struct _opencv_arr_object {
 typedef struct _opencv_mat_object {
 	zend_object std;
 	zend_bool constructed;
-	CvMat *cvptr;
+	Mat *cvptr;
 } opencv_mat_object;
 
 typedef struct _opencv_image_object {

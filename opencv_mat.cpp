@@ -37,7 +37,7 @@ static inline opencv_mat_object* opencv_mat_object_get(zval *zobj TSRMLS_DC) {
 void opencv_mat_object_destroy(void *object TSRMLS_DC)
 {
     opencv_mat_object *mat = (opencv_mat_object *)object;
-
+	delete mat->cvptr;
     zend_hash_destroy(mat->std.properties);
     FREE_HASHTABLE(mat->std.properties);
 
@@ -85,7 +85,7 @@ PHP_METHOD(OpenCV_Mat, __construct)
     PHP_OPENCV_RESTORE_ERRORS();
 
     object = (opencv_mat_object *) zend_object_store_get_object(getThis() TSRMLS_CC);
-    object->cvptr = cvCreateMat(rows, cols, type);
+    object->cvptr = new Mat(rows, cols, type);
     php_opencv_throw_exception();
 }
 /* }}} */
