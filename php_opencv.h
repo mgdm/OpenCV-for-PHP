@@ -66,7 +66,6 @@ using namespace cv;
 PHP_MINIT_FUNCTION(opencv);
 PHP_MINIT_FUNCTION(opencv_error);
 PHP_MINIT_FUNCTION(opencv_mat);
-PHP_MINIT_FUNCTION(opencv_arr);
 PHP_MINIT_FUNCTION(opencv_image);
 PHP_MINIT_FUNCTION(opencv_histogram);
 PHP_MINIT_FUNCTION(opencv_capture);
@@ -77,16 +76,9 @@ PHP_RINIT_FUNCTION(opencv);
 extern zend_object_handlers opencv_std_object_handlers;
 extern zend_class_entry *opencv_ce_cvexception;
 extern zend_class_entry *opencv_ce_cvmat;
-extern zend_class_entry *opencv_ce_cvarr;
 extern zend_class_entry *opencv_ce_image;
 extern zend_class_entry *opencv_ce_histogram;
 
-
-typedef struct _opencv_arr_object {
-	zend_object std;
-	zend_bool constructed;
-	CvArr *cvptr;
-} opencv_arr_object;
 
 typedef struct _opencv_mat_object {
 	zend_object std;

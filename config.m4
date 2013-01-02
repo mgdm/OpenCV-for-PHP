@@ -27,7 +27,7 @@ if test "$PHP_OPENCV" != "no"; then
 
   PHP_NEW_EXTENSION(
 	opencv, 
-	opencv.cpp opencv_error.cpp opencv_mat.cpp opencv_arr.cpp opencv_image.cpp opencv_histogram.cpp opencv_capture.cpp, 
+	opencv.cpp opencv_error.cpp opencv_mat.cpp opencv_image.cpp opencv_histogram.cpp opencv_capture.cpp, 
 	$ext_shared,
 	,
 	,

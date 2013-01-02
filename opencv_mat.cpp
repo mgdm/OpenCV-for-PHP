@@ -104,7 +104,7 @@ PHP_MINIT_FUNCTION(opencv_mat)
 	zend_class_entry ce;
 	
     INIT_NS_CLASS_ENTRY(ce, "OpenCV", "Mat", opencv_mat_methods);
-	opencv_ce_cvarr = zend_register_internal_class_ex(&ce, opencv_ce_cvarr, NULL TSRMLS_CC);
+	opencv_ce_cvmat = zend_register_internal_class(&ce TSRMLS_CC);
 
 	return SUCCESS;
 }

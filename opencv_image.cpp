@@ -823,7 +823,7 @@ PHP_MINIT_FUNCTION(opencv_image)
 	zend_class_entry ce;
 
 	INIT_NS_CLASS_ENTRY(ce, "OpenCV", "Image", opencv_image_methods);
-	opencv_ce_image = zend_register_internal_class_ex(&ce, opencv_ce_cvarr, NULL TSRMLS_CC);
+	opencv_ce_image = zend_register_internal_class_ex(&ce, opencv_ce_cvmat, NULL TSRMLS_CC);
     opencv_ce_image->create_object = opencv_image_object_new;
 
 	#define REGISTER_IMAGE_LONG_CONST(const_name, value) \
