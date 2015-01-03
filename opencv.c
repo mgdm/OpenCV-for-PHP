@@ -37,13 +37,15 @@ static int le_opencv;
 PHP_OPENCV_API void php_opencv_basedir_check(const char *filename TSRMLS_DC) {
 	const char *error_message;
 	int status;
-
+	
+#if PHP_VERSION_ID < 50400
 	if (PG(safe_mode) && (!php_checkuid_ex(filename, NULL, CHECKUID_CHECK_FILE_AND_DIR, CHECKUID_NO_ERRORS))) {
         error_message = estrdup("Could not access file due to safe_mode restrictions");
         zend_throw_exception(opencv_ce_cvexception, error_message, status TSRMLS_CC);
         efree(error_message);
         return;
 	}
+#endif
 
 	if (PG(open_basedir) && php_check_open_basedir_ex(filename, 0 TSRMLS_CC)) {
         error_message = estrdup("Could not access file due to open_basedir restrictions");
