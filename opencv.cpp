@@ -22,10 +22,12 @@
 #include "config.h"
 #endif
 
-#include "php.h"
+#include "php_opencv.h"
+
+extern "C" {
 #include "php_ini.h"
 #include "ext/standard/info.h"
-#include "php_opencv.h"
+}
 
 /* If you declare any globals in php_opencv.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(opencv)
@@ -33,17 +35,20 @@ ZEND_DECLARE_MODULE_GLOBALS(opencv)
 
 /* True global resources - no need for thread safety here */
 static int le_opencv;
+zend_error_handling opencv_original_error_handling;
 
 PHP_OPENCV_API void php_opencv_basedir_check(const char *filename TSRMLS_DC) {
-	const char *error_message;
+	char *error_message;
 	int status;
 
+#if PHP_VERSION_ID < 50400
 	if (PG(safe_mode) && (!php_checkuid_ex(filename, NULL, CHECKUID_CHECK_FILE_AND_DIR, CHECKUID_NO_ERRORS))) {
         error_message = estrdup("Could not access file due to safe_mode restrictions");
-        zend_throw_exception(opencv_ce_cvexception, error_message, status TSRMLS_CC);
+        zend_throw_exception(opencv_ce_cvexception, (char *) error_message, status TSRMLS_CC);
         efree(error_message);
         return;
 	}
+#endif
 
 	if (PG(open_basedir) && php_check_open_basedir_ex(filename, 0 TSRMLS_CC)) {
         error_message = estrdup("Could not access file due to open_basedir restrictions");
@@ -104,7 +109,6 @@ PHP_MINIT_FUNCTION(opencv)
 	*/
 
 	PHP_MINIT(opencv_error)(INIT_FUNC_ARGS_PASSTHRU);
-	PHP_MINIT(opencv_arr)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_mat)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_image)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(opencv_histogram)(INIT_FUNC_ARGS_PASSTHRU);

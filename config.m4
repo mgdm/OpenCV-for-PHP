@@ -22,9 +22,16 @@ if test "$PHP_OPENCV" != "no"; then
 
   PHP_REQUIRE_CXX()
   PHP_SUBST(OPENCV_SHARED_LIBADD)
+  PHP_ADD_LIBRARY(stdc++, 1, OPENCV_SHARED_LIBADD)
   AC_DEFINE(HAVE_OPENCV, 1, [ ])
 
-  PHP_NEW_EXTENSION(opencv, opencv.c opencv_error.c opencv_mat.c opencv_arr.c opencv_image.c opencv_histogram.c opencv_capture.c, $ext_shared)
+  PHP_NEW_EXTENSION(
+	opencv, 
+	opencv.cpp opencv_error.cpp opencv_mat.cpp opencv_image.cpp opencv_histogram.cpp opencv_capture.cpp, 
+	$ext_shared,
+	,
+	,
+	 "yes")
 
   EXT_OPENCV_HEADERS="php_opencv_api.h"
 

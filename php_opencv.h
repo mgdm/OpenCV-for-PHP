@@ -21,8 +21,20 @@
 #ifndef PHP_OPENCV_H
 #define PHP_OPENCV_H
 
+extern "C" {
+#include "php.h"
+#include "zend_exceptions.h"
+
+#ifdef ZTS
+#include "TSRM.h"
+#endif
+
+}
+
+extern zend_error_handling opencv_original_error_handling;
 extern zend_module_entry opencv_module_entry;
 #define phpext_opencv_ptr &opencv_module_entry
+
 
 #ifdef PHP_WIN32
 #	define PHP_OPENCV_API __declspec(dllexport)
@@ -32,69 +44,28 @@ extern zend_module_entry opencv_module_entry;
 #	define PHP_OPENCV_API
 #endif
 
-#ifndef FALSE
-#define FALSE (0)
-#endif
-
-#ifndef TRUE
-#define TRUE (!FALSE)
-#endif
-
-/* Macros for PHP 5.2 */
-#ifndef zend_parse_parameters_none
-#define zend_parse_parameters_none()                                        \
-    zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "")
-#endif
-
 /* Constants for open_basedir checks */
 #define OPENCV_READ_WRITE_NO_ERROR 0
 #define OPENCV_READ_WRITE_SAFE_MODE_ERROR 1
 #define OPENCV_READ_WRITE_OPEN_BASEDIR_ERROR 2
 
-/* refcount macros */
-#ifndef Z_ADDREF_P
-#define Z_ADDREF_P(pz)                (pz)->refcount++
-#endif
-
-#ifndef Z_DELREF_P
-#define Z_DELREF_P(pz)                (pz)->refcount--
-#endif
-
-#ifndef Z_SET_REFCOUNT_P
-#define Z_SET_REFCOUNT_P(pz, rc)      (pz)->refcount = rc
-#endif
-
 /* turn error handling to exception mode and restore */
-#if PHP_VERSION_ID >= 50300
-/* 5.3 version of the macros */
-#define PHP_OPENCV_ERROR_HANDLING() \
-	zend_replace_error_handling(EH_THROW, opencv_ce_cvexception, &opencv_original_error_handling TSRMLS_CC)
+#define PHP_OPENCV_ERROR_HANDLING() do { \
+	zend_replace_error_handling(EH_THROW, opencv_ce_cvexception, &opencv_original_error_handling TSRMLS_CC); \
+} while(0)
 
-#define PHP_OPENCV_RESTORE_ERRORS() \
-	zend_restore_error_handling(&opencv_original_error_handling TSRMLS_CC)
+#define PHP_OPENCV_RESTORE_ERRORS() do { \
+	zend_restore_error_handling(&opencv_original_error_handling TSRMLS_CC); \
+} while(0)
 
-#else
-/* 5.2 versions of the macros */
-#define PHP_OPENCV_ERROR_HANDLING() \
-		php_set_error_handling(EH_THROW, opencv_ce_cvexception TSRMLS_CC)
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
-#define PHP_OPENCV_RESTORE_ERRORS() \
-		php_std_error_handling()
-
-#endif
-
-
-#ifdef ZTS
-#include "TSRM.h"
-#endif
-
-#include <cv.h>
-#include <highgui.h>
+using namespace cv;
 
 PHP_MINIT_FUNCTION(opencv);
 PHP_MINIT_FUNCTION(opencv_error);
 PHP_MINIT_FUNCTION(opencv_mat);
-PHP_MINIT_FUNCTION(opencv_arr);
 PHP_MINIT_FUNCTION(opencv_image);
 PHP_MINIT_FUNCTION(opencv_histogram);
 PHP_MINIT_FUNCTION(opencv_capture);
@@ -105,22 +76,14 @@ PHP_RINIT_FUNCTION(opencv);
 extern zend_object_handlers opencv_std_object_handlers;
 extern zend_class_entry *opencv_ce_cvexception;
 extern zend_class_entry *opencv_ce_cvmat;
-extern zend_class_entry *opencv_ce_cvarr;
 extern zend_class_entry *opencv_ce_image;
 extern zend_class_entry *opencv_ce_histogram;
 
-zend_error_handling opencv_original_error_handling;
-
-typedef struct _opencv_arr_object {
-	zend_object std;
-	zend_bool constructed;
-	CvArr *cvptr;
-} opencv_arr_object;
 
 typedef struct _opencv_mat_object {
 	zend_object std;
 	zend_bool constructed;
-	CvMat *cvptr;
+	Mat *cvptr;
 } opencv_mat_object;
 
 typedef struct _opencv_image_object {
@@ -142,7 +105,7 @@ typedef struct _opencv_capture_object {
 } opencv_capture_object;
 
 
-PHP_OPENCV_API extern void php_opencv_throw_exception();
+PHP_OPENCV_API extern void php_opencv_throw_exception(TSRMLS_D);
 PHP_OPENCV_API void php_opencv_basedir_check(const char *filename TSRMLS_DC);
 PHP_OPENCV_API extern opencv_image_object* opencv_image_object_get(zval *zobj TSRMLS_DC);
 PHP_OPENCV_API extern opencv_histogram_object* opencv_histogram_object_get(zval *zobj TSRMLS_DC);
