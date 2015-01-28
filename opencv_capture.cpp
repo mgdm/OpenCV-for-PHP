@@ -142,7 +142,7 @@ PHP_METHOD(OpenCV_Capture, grabFrame)
     capture_object = opencv_capture_object_get(getThis() TSRMLS_CC);
     long result = cvGrabFrame(capture_object->cvptr);
 
-    php_opencv_throw_exception();
+    php_opencv_throw_exception(TSRMLS_C);
     RETURN_LONG(result);
 }
 
@@ -162,9 +162,9 @@ PHP_METHOD(OpenCV_Capture, retrieveFrame)
 
     capture_object = opencv_capture_object_get(getThis() TSRMLS_CC);
     temp = cvCloneImage(cvRetrieveFrame(capture_object->cvptr, 0));
-    php_opencv_make_image_zval(temp, return_value);
+    php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
 
-    php_opencv_throw_exception();
+    php_opencv_throw_exception(TSRMLS_C);
 }
 
 PHP_METHOD(OpenCV_Capture, queryFrame)
@@ -183,9 +183,9 @@ PHP_METHOD(OpenCV_Capture, queryFrame)
 
     capture_object = opencv_capture_object_get(getThis() TSRMLS_CC);
     temp = cvCloneImage(cvQueryFrame(capture_object->cvptr));
-    php_opencv_make_image_zval(temp, return_value);
+    php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
 
-    php_opencv_throw_exception();
+    php_opencv_throw_exception(TSRMLS_C);
 }
 
 PHP_METHOD(OpenCV_Capture, getProperty)
@@ -206,7 +206,7 @@ PHP_METHOD(OpenCV_Capture, getProperty)
 
     capture_object = opencv_capture_object_get(getThis() TSRMLS_CC);
     val = cvGetCaptureProperty(capture_object->cvptr, property);
-    php_opencv_throw_exception();
+    php_opencv_throw_exception(TSRMLS_C);
 
     /* FourCC is special */
     if (property == CV_CAP_PROP_FOURCC) {
@@ -234,7 +234,7 @@ PHP_METHOD(OpenCV_Capture, setProperty)
 
     capture_object = opencv_capture_object_get(getThis() TSRMLS_CC);
     val = cvSetCaptureProperty(capture_object->cvptr, property, val);
-    php_opencv_throw_exception();
+    php_opencv_throw_exception(TSRMLS_C);
 }
 
 /* {{{ opencv_capture_methods[] */

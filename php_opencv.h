@@ -105,7 +105,7 @@ typedef struct _opencv_capture_object {
 } opencv_capture_object;
 
 
-PHP_OPENCV_API extern void php_opencv_throw_exception();
+PHP_OPENCV_API extern void php_opencv_throw_exception(TSRMLS_D);
 PHP_OPENCV_API void php_opencv_basedir_check(const char *filename TSRMLS_DC);
 PHP_OPENCV_API extern opencv_image_object* opencv_image_object_get(zval *zobj TSRMLS_DC);
 PHP_OPENCV_API extern opencv_histogram_object* opencv_histogram_object_get(zval *zobj TSRMLS_DC);

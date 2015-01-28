@@ -609,7 +609,7 @@ PHP_METHOD(OpenCV_Image, split) {
         MAKE_STD_ZVAL(return_zvals[i]);
         object_init_ex(return_zvals[i], opencv_ce_image);
         temp = cvCreateImage(cvGetSize(image_object->cvptr), IPL_DEPTH_8U, 1);
-        php_opencv_make_image_zval(temp, return_zvals[i]);
+        php_opencv_make_image_zval(temp, return_zvals[i] TSRMLS_CC);
         planes[i] = temp;
     }
 
@@ -649,7 +649,7 @@ PHP_METHOD(OpenCV_Image, convertColor) {
 
     temp = cvCreateImage(cvGetSize(image_object->cvptr), image_object->cvptr->depth, channels);
     cvCvtColor(image_object->cvptr, temp, code);
-    php_opencv_make_image_zval(temp, return_value);
+    php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
 
     php_opencv_throw_exception(TSRMLS_C);
 }
@@ -675,7 +675,7 @@ PHP_METHOD(OpenCV_Image, backProject)
 
     temp = cvCloneImage(image_object->cvptr);
     cvCalcBackProject(&image_object->cvptr, temp, hist_object->cvptr);
-    php_opencv_make_image_zval(temp, return_value);
+    php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
 
     php_opencv_throw_exception(TSRMLS_C);
 }
@@ -704,7 +704,7 @@ PHP_METHOD(OpenCV_Image, matchTemplate)
             IPL_DEPTH_32F, 1);
 
     cvMatchTemplate(image_object->cvptr, template_object->cvptr, temp, mode);
-    php_opencv_make_image_zval(temp, return_value);
+    php_opencv_make_image_zval(temp, return_value TSRMLS_CC);
     php_opencv_throw_exception(TSRMLS_C);
 }
 /* }}} */
@@ -781,7 +781,7 @@ PHP_METHOD(OpenCV_Image, haarDetectObjects)
     }
 
 	//cvReleaseImage(grey_image);
-	php_opencv_throw_exception();
+	php_opencv_throw_exception(TSRMLS_C);
 }
 /* }}} */
 

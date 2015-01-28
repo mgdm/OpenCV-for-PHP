@@ -131,7 +131,7 @@ PHP_METHOD(OpenCV_Mat, __construct)
     object = (opencv_mat_object *) zend_object_store_get_object(getThis() TSRMLS_CC);
     object->cvptr = new Mat(rows, cols, type);
 	opencv_mat_object_assign_properties(getThis() TSRMLS_CC);
-    php_opencv_throw_exception();
+    php_opencv_throw_exception(TSRMLS_C);
 }
 /* }}} */
 

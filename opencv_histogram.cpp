@@ -115,7 +115,7 @@ PHP_METHOD(OpenCV_Histogram, calc)
     image_object = opencv_image_object_get(image_zval TSRMLS_CC);
     cvCalcHist(&image_object->cvptr, hist_object->cvptr, accumulate, NULL);
 
-    php_opencv_throw_exception();
+    php_opencv_throw_exception(TSRMLS_C);
 }
 
 /* {{{ opencv_histogram_methods[] */
