@@ -32,7 +32,7 @@ PHP_MINIT_FUNCTION(opencv_error)
 	zend_class_entry ce, status_ce;
 
 	INIT_NS_CLASS_ENTRY(ce, "OpenCV", "Exception", NULL);
-	opencv_ce_cvexception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), "Exception" TSRMLS_CC);
+	opencv_ce_cvexception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C));
 
 	return SUCCESS;
 }
