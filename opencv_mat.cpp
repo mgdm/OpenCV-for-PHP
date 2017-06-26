@@ -39,7 +39,7 @@ static inline opencv_mat_object* opencv_mat_object_get(zval *zobj TSRMLS_DC) {
         zval *temp_prop; \
         ZVAL_NEW_ARR(temp_prop); \
         ZVAL_LONG(temp_prop, MEMBER); \
-        zend_hash_update(Z_OBJPROP_P(mat_zval), PROPERTY, sizeof(PROPERTY), (void **) &temp_prop, sizeof(zval *), NULL); \
+        zend_hash_update(Z_OBJPROP_P(mat_zval), (zend_string *)PROPERTY, temp_prop); \
     } while(0)
 
 /*
