@@ -27,7 +27,7 @@
 zend_class_entry *opencv_ce_cvmat;
 
 static inline opencv_mat_object* opencv_mat_object_get(zval *zobj TSRMLS_DC) {
-    opencv_mat_object *pobj = (opencv_mat_object *) zend_object_store_get_object(zobj TSRMLS_CC);
+    opencv_mat_object *pobj = (opencv_mat_object *) Z_OBJ_P(zobj TSRMLS_CC);
     if (pobj->cvptr->empty()) {
         php_error(E_ERROR, "Internal surface object missing in %s wrapper, you must call parent::__construct in extended classes", Z_OBJCE_P(zobj)->name);
     }
@@ -37,7 +37,7 @@ static inline opencv_mat_object* opencv_mat_object_get(zval *zobj TSRMLS_DC) {
 #define PHP_OPENCV_ADD_MAT_LONG_PROPERTY(PROPERTY, MEMBER) \
     do { \
         zval *temp_prop; \
-        MAKE_STD_ZVAL(temp_prop); \
+        ZVAL_NEW_ARR(temp_prop); \
         ZVAL_LONG(temp_prop, MEMBER); \
         zend_hash_update(Z_OBJPROP_P(mat_zval), PROPERTY, sizeof(PROPERTY), (void **) &temp_prop, sizeof(zval *), NULL); \
     } while(0)
@@ -67,7 +67,7 @@ PHP_OPENCV_API zval *php_opencv_make_mat_zval(Mat mat, zval *mat_zval TSRMLS_DC)
 
 static void opencv_mat_object_assign_properties(zval *mat_zval TSRMLS_DC) {
 	opencv_mat_object *mat_obj;
-    mat_obj = (opencv_mat_object *) zend_object_store_get_object(mat_zval TSRMLS_CC);
+    mat_obj = (opencv_mat_object *) Z_OBJ_P(mat_zval TSRMLS_CC);
 
     PHP_OPENCV_ADD_MAT_LONG_PROPERTY("cols", mat_obj->cvptr->cols);
     PHP_OPENCV_ADD_MAT_LONG_PROPERTY("rows", mat_obj->cvptr->rows);
@@ -128,7 +128,7 @@ PHP_METHOD(OpenCV_Mat, __construct)
     }
     PHP_OPENCV_RESTORE_ERRORS();
 
-    object = (opencv_mat_object *) zend_object_store_get_object(getThis() TSRMLS_CC);
+    object = (opencv_mat_object *) Z_OBJ_P(getThis() TSRMLS_CC);
     object->cvptr = new Mat(rows, cols, type);
 	opencv_mat_object_assign_properties(getThis() TSRMLS_CC);
     php_opencv_throw_exception(TSRMLS_C);
@@ -152,7 +152,7 @@ PHP_METHOD(OpenCV_Mat, load) {
     php_opencv_basedir_check(filename TSRMLS_CC);
 
     object_init_ex(return_value, opencv_ce_cvmat);
-    mat_obj = (opencv_mat_object *) zend_object_store_get_object(return_value TSRMLS_CC);
+    mat_obj = (opencv_mat_object *) Z_OBJ_P(return_value TSRMLS_CC);
 
     temp = imread(filename, mode);
     if (temp.empty()) {
